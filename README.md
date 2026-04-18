@@ -84,14 +84,7 @@ sgx
 
 注意：`0`、`1`、`2` 这些数字是菜单内选项，不是 Shell 命令。请先进入脚本菜单再输入。
 
-### 2. 管理命令模式
-```bash
-./singularix.sh list   # 查看节点与状态
-./singularix.sh res    # 重启服务
-./singularix.sh upx    # 升级 Xray
-./singularix.sh ups    # 升级 Sing-box
-./singularix.sh del    # 彻底卸载
-```
+``
 
 ### 2.1 订阅输出格式
 执行 `./singularix.sh list` 时会同时输出：
@@ -102,25 +95,3 @@ sgx
 
 可通过环境变量 `SUBCONVERTER_URL` 自定义转换服务地址（默认 `https://api.v1.mk/sub`）。
 
-### 3. 直接执行核心脚本
-```bash
-chmod +x platforms/container/nodejs/start.sh
-./platforms/container/nodejs/start.sh
-```
-
-### 4. Node.js 容器入口
-```bash
-cd platforms/container/nodejs
-npm install
-npm start
-```
-
-## 常用环境变量
-- `uuid`：自定义 UUID。
-- `DOMAIN`：节点分享域名。
-- `PORT`：Node.js HTTP 服务端口。
-- `NAME`：节点名称后缀。
-
-## 维护说明
-- Workflow 文件已采用语义化命名，便于区分“自动部署”与“仅保活”。
-- 建议后续新增脚本优先复用 `platforms/container/nodejs/start.sh`，避免再次出现多份同源逻辑分叉。

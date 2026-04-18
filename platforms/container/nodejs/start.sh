@@ -89,6 +89,26 @@ echo "$cdnym" > "$HOME/agsbx/cdnym"
 echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
 fi
 }
+
+download_asset(){
+url="$1"
+out="$2"
+if command -v curl >/dev/null 2>&1; then
+curl -fsSL --http1.1 --retry 2 --connect-timeout 10 "$url" -o "$out"
+return $?
+fi
+if command -v wget >/dev/null 2>&1; then
+wget -qO "$out" "$url"
+return $?
+fi
+return 127
+}
+
+binary_ok(){
+bin="$1"
+shift
+"$bin" "$@" >/dev/null 2>&1
+}
 agsbx_core_running(){
 if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)'; then
 return 0
@@ -165,11 +185,16 @@ fi
 
 insuuid(){
 if [ -z "$uuid" ] && [ ! -e "$HOME/agsbx/uuid" ]; then
-if [ -e "$HOME/agsbx/sing-box" ]; then
-uuid=$("$HOME/agsbx/sing-box" generate uuid)
-else
-uuid=$("$HOME/agsbx/xray" uuid)
+if [ -x "$HOME/agsbx/sing-box" ] && binary_ok "$HOME/agsbx/sing-box" version; then
+uuid=$("$HOME/agsbx/sing-box" generate uuid 2>/dev/null || true)
 fi
+if [ -z "$uuid" ] && [ -x "$HOME/agsbx/xray" ] && binary_ok "$HOME/agsbx/xray" version; then
+uuid=$("$HOME/agsbx/xray" uuid 2>/dev/null || true)
+fi
+if [ -z "$uuid" ] && [ -r /proc/sys/kernel/random/uuid ]; then
+uuid=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || true)
+fi
+[ -n "$uuid" ] || { echo "生成 UUID 失败，安装终止。"; exit 1; }
 echo "$uuid" > "$HOME/agsbx/uuid"
 elif [ -n "$uuid" ]; then
 echo "$uuid" > "$HOME/agsbx/uuid"
@@ -183,7 +208,8 @@ echo "=========启用xray内核========="
 mkdir -p "$HOME/agsbx/xrk"
 if [ ! -e "$HOME/agsbx/xray" ]; then
 [ "$cpu" = "amd64" ] && xarch="64" || xarch="arm64-v8a"
-url="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$xarch.zip"; out="$HOME/agsbx/xray.zip"; (command -v curl >/dev/null 2>&1 && curl -Lo "$out" -# --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -O "$out" --tries=2 "$url")
+url="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$xarch.zip"; out="$HOME/agsbx/xray.zip"
+download_asset "$url" "$out" || { echo "下载 Xray 失败，请稍后重试。"; exit 1; }
 if command -v unzip >/dev/null 2>&1; then
 unzip -o "$out" xray -d "$HOME/agsbx" >/dev/null 2>&1
 elif command -v bsdtar >/dev/null 2>&1; then
@@ -193,7 +219,8 @@ echo "缺少 unzip/bsdtar，无法解压 Xray，请先安装 unzip" && exit 1
 fi
 rm -f "$out"
 chmod +x "$HOME/agsbx/xray"
-sbcore=$("$HOME/agsbx/xray" version 2>/dev/null | awk '/^Xray/{print $2}')
+binary_ok "$HOME/agsbx/xray" version || { echo "Xray 内核执行失败（可能下载损坏或架构不兼容），安装终止。"; exit 1; }
+sbcore=$("$HOME/agsbx/xray" version 2>/dev/null | awk '/^Xray/{print $2}' | head -n1)
 echo "已安装Xray正式版内核：$sbcore"
 fi
 cat > "$HOME/agsbx/xr.json" <<EOF
@@ -399,13 +426,15 @@ echo "=========启用Sing-box内核========="
 if [ ! -e "$HOME/agsbx/sing-box" ]; then
 sver=$( (command -v curl >/dev/null 2>&1 && curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p' | head -n1) || (command -v wget >/dev/null 2>&1 && wget -qO- https://api.github.com/repos/SagerNet/sing-box/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p' | head -n1) )
 [ -z "$sver" ] && sver="1.11.1"
-url="https://github.com/SagerNet/sing-box/releases/download/v$sver/sing-box-$sver-linux-$cpu.tar.gz"; out="$HOME/agsbx/sing-box.tar.gz"; (command -v curl>/dev/null 2>&1 && curl -Lo "$out" -# --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -O "$out" --tries=2 "$url")
-tar -xzf "$out" -C "$HOME/agsbx" --strip-components=1 "sing-box-$sver-linux-$cpu/sing-box" >/dev/null 2>&1
+url="https://github.com/SagerNet/sing-box/releases/download/v$sver/sing-box-$sver-linux-$cpu.tar.gz"; out="$HOME/agsbx/sing-box.tar.gz"
+download_asset "$url" "$out" || { echo "下载 Sing-box 失败，请稍后重试。"; exit 1; }
+tar -xzf "$out" -C "$HOME/agsbx" --strip-components=1 "sing-box-$sver-linux-$cpu/sing-box" >/dev/null 2>&1 || { echo "解压 Sing-box 失败，安装终止。"; rm -f "$out"; exit 1; }
 rm -f "$out"
 chmod +x "$HOME/agsbx/sing-box"
-sbcore=$("$HOME/agsbx/sing-box" version 2>/dev/null | awk '/version/{print $NF}')
-echo "已安装Sing-box正式版内核：$sbcore"
 fi
+binary_ok "$HOME/agsbx/sing-box" version || { echo "Sing-box 内核执行失败（可能下载损坏或架构不兼容），安装终止。"; rm -f "$HOME/agsbx/sing-box"; exit 1; }
+sbcore=$("$HOME/agsbx/sing-box" version 2>/dev/null | awk '/version/{print $NF}' | head -n1)
+echo "已安装Sing-box正式版内核：$sbcore"
 cat > "$HOME/agsbx/sb.json" <<EOF
 {
 "log": {
@@ -841,7 +870,8 @@ echo "=========启用Cloudflared-argo内核========="
 if [ ! -e "$HOME/agsbx/cloudflared" ]; then
 argocore=$({ command -v curl >/dev/null 2>&1 && curl -Ls https://data.jsdelivr.com/v1/package/gh/cloudflare/cloudflared || wget -qO- https://data.jsdelivr.com/v1/package/gh/cloudflare/cloudflared; } | grep -Eo '"[0-9.]+"' | sed -n 1p | tr -d '",')
 echo "下载Cloudflared-argo最新正式版内核：$argocore"
-url="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpu"; out="$HOME/agsbx/cloudflared"; (command -v curl>/dev/null 2>&1 && curl -Lo "$out" -# --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -O "$out" --tries=2 "$url")
+url="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpu"; out="$HOME/agsbx/cloudflared"
+download_asset "$url" "$out" || { echo "下载 Cloudflared 失败，请稍后重试。"; exit 1; }
 chmod +x "$HOME/agsbx/cloudflared"
 fi
 if [ "$argo" = "vmpt" ]; then argoport=$(cat "$HOME/agsbx/vmpt" 2>/dev/null); echo "Vmess" > "$HOME/agsbx/vlvm"; elif [ "$argo" = "vwpt" ]; then argoport=$(cat "$HOME/agsbx/vwpt" 2>/dev/null); echo "Vless" > "$HOME/agsbx/vlvm"; fi; echo "$argoport" > "$HOME/agsbx/argoport.log"
@@ -925,15 +955,7 @@ fi
 if echo "$v4" | grep -q '^104.28'; then
 w4="【WARP】"
 fi
-echo
-singularix_status
-echo
-echo "=========当前服务器本地IP情况========="
-echo "本地IPV4地址：$vps_ipv4 $w4"
-echo "本地IPV6地址：$vps_ipv6 $w6"
-echo "服务器地区：$location"
-echo
-sleep 2
+sleep 1
 if [ "$ippz" = "4" ]; then
 if [ -z "$v4" ]; then
 ipbest
@@ -1176,10 +1198,12 @@ sbdnsyx="ipv4_only"
 fi
 }
 v4orv6
-echo "VPS系统：$op"
-echo "CPU架构：$cpu"
 echo "SingulariX脚本未安装，开始安装..." && sleep 2
 ins
+if ! agsbx_core_running; then
+echo "核心进程未启动，安装失败，已停止输出节点信息。"
+exit 1
+fi
 cip
 echo
 else
