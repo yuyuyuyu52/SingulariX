@@ -21,11 +21,6 @@ export ippz=${ippz}
 export warp=${warp}
 export name=${name}
 v46url="https://icanhazip.com"
-showmode(){
-echo "SingulariX 脚本项目地址：请替换为你的仓库 URL"
-echo "---------------------------------------------------------"
-echo
-}
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo "SingulariX 一键部署脚本"
 echo "当前版本：V25.11.20"
@@ -116,10 +111,10 @@ shift
 "$bin" "$@" >/dev/null 2>&1
 }
 sgx_core_running(){
-if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'sgx/(s|x)'; then
+if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'sgx/(sing-box|xray)'; then
 return 0
 fi
-pgrep -f 'sgx/(s|x)' >/dev/null 2>&1
+pgrep -f 'sgx/(sing-box|xray)' >/dev/null 2>&1
 }
 warpsx(){
 warpurl=""
@@ -925,17 +920,17 @@ fi
 singularix_status(){
 echo "=========当前三大内核运行状态========="
 procs=$(find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null)
-if echo "$procs" | grep -Eq 'sgx/s' || pgrep -f 'sgx/s' >/dev/null 2>&1; then
+if echo "$procs" | grep -Eq 'sgx/sing-box' || pgrep -f 'sgx/sing-box' >/dev/null 2>&1; then
 echo "Sing-box：运行中"
 else
 echo "Sing-box：未启用"
 fi
-if echo "$procs" | grep -Eq 'sgx/x' || pgrep -f 'sgx/x' >/dev/null 2>&1; then
+if echo "$procs" | grep -Eq 'sgx/xray' || pgrep -f 'sgx/xray' >/dev/null 2>&1; then
 echo "Xray：运行中"
 else
 echo "Xray：未启用"
 fi
-if echo "$procs" | grep -Eq 'sgx/c' || pgrep -f 'sgx/c' >/dev/null 2>&1; then
+if echo "$procs" | grep -Eq 'sgx/cloudflared' || pgrep -f 'sgx/cloudflared' >/dev/null 2>&1; then
 echo "Argo：运行中"
 else
 echo "Argo：未启用"
@@ -1193,12 +1188,10 @@ echo
 echo "---------------------------------------------------------"
 echo "聚合节点信息，请进入 $HOME/sgx/jh.txt 文件目录查看或者运行 cat $HOME/sgx/jh.txt 查看"
 echo "========================================================="
-echo "相关快捷方式如下：(首次安装成功后需重连SSH，sgx快捷方式才可生效)"
-showmode
 }
 if ! sgx_core_running; then
-for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/sgx/c|/sgx/s|/sgx/x'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null && echo "Killed $PID ($TARGET)" || echo "Could not kill $PID ($TARGET)"; fi; fi; done
-kill -15 $(pgrep -f 'sgx/s' 2>/dev/null) $(pgrep -f 'sgx/c' 2>/dev/null) $(pgrep -f 'sgx/x' 2>/dev/null) >/dev/null 2>&1
+for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/sgx/(sing-box|xray|cloudflared)'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null && echo "Killed $PID ($TARGET)" || echo "Could not kill $PID ($TARGET)"; fi; fi; done
+kill -15 $(pgrep -f 'sgx/sing-box' 2>/dev/null) $(pgrep -f 'sgx/cloudflared' 2>/dev/null) $(pgrep -f 'sgx/xray' 2>/dev/null) >/dev/null 2>&1
 v4orv6(){
 if [ -z "$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
 echo -e "nameserver 2a00:1098:2b::1\nnameserver 2a00:1098:2c::1" > /etc/resolv.conf
@@ -1228,8 +1221,5 @@ else
 echo "SingulariX脚本已安装"
 echo
 singularix_status
-echo
-echo "相关快捷方式如下："
-showmode
 exit
 fi
