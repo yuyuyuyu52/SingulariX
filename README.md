@@ -29,7 +29,6 @@ SingulariX 是面向 Linux VPS 与容器环境的代理部署项目，核心能�
 ## 当前目录结构
 ```text
 .
-├── index.html
 ├── README.md
 ├── singularix.sh
 └── platforms/
