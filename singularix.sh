@@ -4,9 +4,42 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 CORE_SCRIPT="$SCRIPT_DIR/platforms/container/nodejs/start.sh"
 
-if [ ! -f "$CORE_SCRIPT" ]; then
+download_bootstrap_file() {
+  url="$1"
+  out="$2"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url" -o "$out"
+    return $?
+  fi
+  if command -v wget >/dev/null 2>&1; then
+    wget -qO "$out" "$url"
+    return $?
+  fi
+  return 127
+}
+
+bootstrap_core_script() {
+  [ -f "$CORE_SCRIPT" ] && return 0
+
+  raw_base_url="${SGX_RAW_BASE_URL:-https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main}"
+  core_url="${SGX_CORE_URL:-$raw_base_url/platforms/container/nodejs/start.sh}"
+  bootstrap_root="${TMPDIR:-/tmp}/singularix-bootstrap-$$"
+  bootstrap_core="$bootstrap_root/platforms/container/nodejs/start.sh"
+
+  mkdir -p "$bootstrap_root/platforms/container/nodejs" 2>/dev/null || return 1
+  if download_bootstrap_file "$core_url" "$bootstrap_core" && [ -s "$bootstrap_core" ]; then
+    chmod +x "$bootstrap_core" 2>/dev/null || true
+    CORE_SCRIPT="$bootstrap_core"
+    return 0
+  fi
+  return 1
+}
+
+if [ ! -f "$CORE_SCRIPT" ] && ! bootstrap_core_script; then
   echo "错误: 未找到核心脚本: $CORE_SCRIPT" >&2
-  echo "请确认仓库结构完整，或直接运行 platforms/container/nodejs/start.sh" >&2
+  echo "请确认仓库结构完整，或稍后重试一键安装命令。" >&2
+  echo "你也可以手动克隆仓库后运行 ./singularix.sh" >&2
   exit 1
 fi
 
