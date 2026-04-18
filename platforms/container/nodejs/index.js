@@ -34,7 +34,7 @@ fs.chmod(START_SCRIPT, 0o755, (err) => {
 const server = http.createServer((req, res) => {
     if (req.url === '/') {
         res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('🟢恭喜！Argosbx小钢炮脚本-nodejs版部署成功！\n\n查看节点信息路径：/你的uuid');
+        res.end('🟢恭喜！SingulariX小钢炮脚本-nodejs版部署成功！\n\n查看节点信息路径：/你的uuid');
         return;
     }
 

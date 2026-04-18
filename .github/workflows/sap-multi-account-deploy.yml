@@ -35,6 +35,9 @@ jobs:
       # 选填！Argo固定隧道token，每个账号对应token空一格，不填则每个实例启用argo临时隧道，多个账号中有个别账号不启用填no
       AGKS: ""
 
+      # 必填！你的容器镜像地址，例如 ghcr.io/YOUR_NAMESPACE/singularix:latest
+      DOCKER_IMAGE: "ghcr.io/YOUR_NAMESPACE/singularix:latest"
+
       # 优先独立执行！删除账户内的APP名称，多个APP空一格，执行后务必还原留空状态：DELAPP: "" 
       DELAPP: "" 
 
@@ -62,10 +65,7 @@ jobs:
           read -ra AGKS <<< "$AGKS"
           echo "*****************************************************"
           echo "*****************************************************"
-          echo "甬哥Github项目  ：github.com/yonggekkk"
-          echo "甬哥Blogger博客 ：ygkkk.blogspot.com"
-          echo "甬哥YouTube频道 ：www.youtube.com/@ygkkk"
-          echo "Argosbx小钢炮脚本-SAP多账户自动部署并保活脚本【Github】"
+          echo "SingulariX - SAP多账户自动部署并保活脚本"
           echo "版本：V25.10.5"
           echo "*****************************************************"
           echo "*****************************************************"
@@ -196,7 +196,7 @@ jobs:
             fi
             else          
             echo "🟡${APP_NAME} 未部署，开始部署……"
-            push_out="$(timeout 180 cf push "$APP_NAME" --docker-image ygkkk/argosbx -m 512M --health-check-type port 2>&1)"
+            push_out="$(timeout 180 cf push "$APP_NAME" --docker-image "$DOCKER_IMAGE" -m 512M --health-check-type port 2>&1)"
             echo $push_out
             pushout
             if [ $? -ne 0 ]; then
