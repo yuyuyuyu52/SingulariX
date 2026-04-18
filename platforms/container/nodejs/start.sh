@@ -14,9 +14,6 @@ export sspt=${sspt}
 export sopt=${sopt}
 export reym=${reym}
 export cdnym=${cdnym}
-export argo=${argo}
-export agn=${agn}
-export agk=${agk}
 export ippz=${ippz}
 export warp=${warp}
 export name=${name}
@@ -56,7 +53,7 @@ fi
 }
 
 # When rerunning without env vars, recover previously saved protocol ports/options.
-for key in vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym argo agn agk ippz warp name uuid; do
+for key in vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym ippz warp name uuid; do
 load_saved_var "$key"
 done
 
@@ -211,6 +208,15 @@ if [ ! -e "$HOME/sgx/xray" ]; then
 [ "$cpu" = "amd64" ] && xarch="64" || xarch="arm64-v8a"
 url="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$xarch.zip"; out="$HOME/sgx/xray.zip"
 download_asset "$url" "$out" || { echo "下载 Xray 失败，请稍后重试。"; exit 1; }
+if ! command -v unzip >/dev/null 2>&1 && ! command -v bsdtar >/dev/null 2>&1; then
+if command -v apt >/dev/null 2>&1; then
+apt update >/dev/null 2>&1 && apt install -y unzip >/dev/null 2>&1
+elif command -v apk >/dev/null 2>&1; then
+apk add --no-cache unzip >/dev/null 2>&1
+elif command -v yum >/dev/null 2>&1; then
+yum install -y unzip >/dev/null 2>&1
+fi
+fi
 if command -v unzip >/dev/null 2>&1; then
 unzip -o "$out" xray -d "$HOME/sgx" >/dev/null 2>&1
 elif command -v bsdtar >/dev/null 2>&1; then
@@ -877,48 +883,9 @@ xrsbso
 warpsx
 xrsbout
 fi
-if [ -n "$argo" ]; then
-echo
-echo "=========启用Cloudflared-argo内核========="
-if [ ! -e "$HOME/sgx/cloudflared" ]; then
-argocore=$({ command -v curl >/dev/null 2>&1 && curl -Ls https://data.jsdelivr.com/v1/package/gh/cloudflare/cloudflared || wget -qO- https://data.jsdelivr.com/v1/package/gh/cloudflare/cloudflared; } | grep -Eo '"[0-9.]+"' | sed -n 1p | tr -d '",')
-echo "下载Cloudflared-argo最新正式版内核：$argocore"
-url="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpu"; out="$HOME/sgx/cloudflared"
-download_asset "$url" "$out" || { echo "下载 Cloudflared 失败，请稍后重试。"; exit 1; }
-chmod +x "$HOME/sgx/cloudflared"
-fi
-if [ "$argo" = "vmpt" ]; then argoport=$(cat "$HOME/sgx/vmpt" 2>/dev/null); echo "Vmess" > "$HOME/sgx/vlvm"; elif [ "$argo" = "vwpt" ]; then argoport=$(cat "$HOME/sgx/vwpt" 2>/dev/null); echo "Vless" > "$HOME/sgx/vlvm"; fi; echo "$argoport" > "$HOME/sgx/argoport.log"
-if [ -n "${agn}" ] && [ -n "${agk}" ]; then
-argoname='固定'
-nohup "$HOME/sgx/cloudflared" tunnel --no-autoupdate --edge-ip-version auto --protocol http2 run --token "${agk}" >/dev/null 2>&1 &
-echo "${agn}" > "$HOME/sgx/sbargoym.log"
-echo "${agk}" > "$HOME/sgx/sbargotoken.log"
-else
-argoname='临时'
-nohup "$HOME/sgx/cloudflared" tunnel --url http://localhost:$(cat $HOME/sgx/argoport.log) --edge-ip-version auto --no-autoupdate --protocol http2 > "$HOME/sgx/argo.log" 2>&1 &
-fi
-echo "申请Argo$argoname隧道中……请稍等"
-sleep 8
-if [ -n "${agn}" ] && [ -n "${agk}" ]; then
-argodomain=$(cat "$HOME/sgx/sbargoym.log" 2>/dev/null)
-else
-argodomain=$(grep -a trycloudflare.com "$HOME/sgx/argo.log" 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
-fi
-if [ -n "${argodomain}" ]; then
-echo "Argo$argoname隧道申请成功"
-else
-echo "Argo$argoname隧道申请失败，请稍后再试"
-fi
-sleep 5
-if sgx_core_running; then
-echo "SingulariX脚本进程启动成功，安装完毕" && sleep 2
-else
-echo "SingulariX脚本进程未启动，安装失败" && exit
-fi
-fi
 }
 singularix_status(){
-echo "=========当前三大内核运行状态========="
+echo "=========当前内核运行状态========="
 procs=$(find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null)
 if echo "$procs" | grep -Eq 'sgx/sing-box' || pgrep -f 'sgx/sing-box' >/dev/null 2>&1; then
 echo "Sing-box：运行中"
@@ -929,11 +896,6 @@ if echo "$procs" | grep -Eq 'sgx/xray' || pgrep -f 'sgx/xray' >/dev/null 2>&1; t
 echo "Xray：运行中"
 else
 echo "Xray：未启用"
-fi
-if echo "$procs" | grep -Eq 'sgx/cloudflared' || pgrep -f 'sgx/cloudflared' >/dev/null 2>&1; then
-echo "Argo：运行中"
-else
-echo "Argo：未启用"
 fi
 }
 cip(){
@@ -1128,70 +1090,13 @@ echo "客户端用户名：$uuid"
 echo "客户端密码：$uuid"
 echo
 fi
-argodomain=$(cat "$HOME/sgx/sbargoym.log" 2>/dev/null)
-[ -z "$argodomain" ] && argodomain=$(grep -a trycloudflare.com "$HOME/sgx/argo.log" 2>/dev/null | awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
-if [ -n "$argodomain" ]; then
-vlvm=$(cat $HOME/sgx/vlvm 2>/dev/null)
-if [ "$vlvm" = "Vmess" ]; then
-vmatls_link1="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-443\", \"add\": \"$argodomain\", \"port\": \"443\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
-echo "$vmatls_link1" >> "$HOME/sgx/jh.txt"
-vmatls_link2="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-8443\", \"add\": \"$argodomain\", \"port\": \"8443\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
-echo "$vmatls_link2" >> "$HOME/sgx/jh.txt"
-vmatls_link3="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-2053\", \"add\": \"$argodomain\", \"port\": \"2053\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
-echo "$vmatls_link3" >> "$HOME/sgx/jh.txt"
-vmatls_link4="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-2083\", \"add\": \"$argodomain\", \"port\": \"2083\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
-echo "$vmatls_link4" >> "$HOME/sgx/jh.txt"
-vmatls_link5="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-2087\", \"add\": \"$argodomain\", \"port\": \"2087\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
-echo "$vmatls_link5" >> "$HOME/sgx/jh.txt"
-vmatls_link6="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-tls-argo-$hostname-2096\", \"add\": \"[2606:4700::0]\", \"port\": \"2096\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"tls\", \"sni\": \"$argodomain\", \"alpn\": \"\", \"fp\": \"chrome\"}" | base64 -w0)"
-echo "$vmatls_link6" >> "$HOME/sgx/jh.txt"
-vma_link7="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-80\", \"add\": \"$argodomain\", \"port\": \"80\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vma_link7" >> "$HOME/sgx/jh.txt"
-vma_link8="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-8080\", \"add\": \"$argodomain\", \"port\": \"8080\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vma_link8" >> "$HOME/sgx/jh.txt"
-vma_link9="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-8880\", \"add\": \"$argodomain\", \"port\": \"8880\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vma_link9" >> "$HOME/sgx/jh.txt"
-vma_link10="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2052\", \"add\": \"$argodomain\", \"port\": \"2052\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vma_link10" >> "$HOME/sgx/jh.txt"
-vma_link11="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2082\", \"add\": \"$argodomain\", \"port\": \"2082\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vma_link11" >> "$HOME/sgx/jh.txt"
-vma_link12="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2086\", \"add\": \"$argodomain\", \"port\": \"2086\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vma_link12" >> "$HOME/sgx/jh.txt"
-vma_link13="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vmess-ws-argo-$hostname-2095\", \"add\": \"[2400:cb00:2049::0]\", \"port\": \"2095\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$argodomain\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
-echo "$vma_link13" >> "$HOME/sgx/jh.txt"
-elif [ "$vlvm" = "Vless" ]; then
-vwatls_link1="vless://$uuid@$argodomain:443?encryption=$enkey&flow=xtls-rprx-vision&type=ws&host=$argodomain&path=$uuid-vw&security=tls&sni=$argodomain&fp=chrome&insecure=0&allowInsecure=0#${sxname}vless-ws-tls-argo-enc-vision-$hostname"
-echo "$vwatls_link1" >> "$HOME/sgx/jh.txt"
-vwa_link2="vless://$uuid@$argodomain:80?encryption=$enkey&flow=xtls-rprx-vision&type=ws&host=$argodomain&path=$uuid-vw&security=none#${sxname}vless-ws-argo-enc-vision-$hostname"
-echo "$vwa_link2" >> "$HOME/sgx/jh.txt"
-fi
-sbtk=$(cat "$HOME/sgx/sbargotoken.log" 2>/dev/null)
-if [ -n "$sbtk" ]; then
-nametn="Argo固定隧道token：$sbtk"
-fi
-argoshow=$(
-echo "Argo隧道端口正在使用$vlvm-ws主协议端口：$(cat $HOME/sgx/argoport.log 2>/dev/null)
-Argo域名：$argodomain
-$nametn
-
-1、💣443端口的$vlvm-ws-tls-argo节点(优选IP与443系端口随便换)
-${vmatls_link1}${vwatls_link1}
-
-2、💣80端口的$vlvm-ws-argo节点(优选IP与80系端口随便换)
-${vma_link7}${vwa_link2}
-"
-)
-fi
-echo "---------------------------------------------------------"
-echo "$argoshow"
-echo
 echo "---------------------------------------------------------"
 echo "聚合节点信息，请进入 $HOME/sgx/jh.txt 文件目录查看或者运行 cat $HOME/sgx/jh.txt 查看"
 echo "========================================================="
 }
 if ! sgx_core_running; then
-for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/sgx/(sing-box|xray|cloudflared)'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null && echo "Killed $PID ($TARGET)" || echo "Could not kill $PID ($TARGET)"; fi; fi; done
-kill -15 $(pgrep -f 'sgx/sing-box' 2>/dev/null) $(pgrep -f 'sgx/cloudflared' 2>/dev/null) $(pgrep -f 'sgx/xray' 2>/dev/null) >/dev/null 2>&1
+for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/sgx/(sing-box|xray)'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null && echo "Killed $PID ($TARGET)" || echo "Could not kill $PID ($TARGET)"; fi; fi; done
+kill -15 $(pgrep -f 'sgx/sing-box' 2>/dev/null) $(pgrep -f 'sgx/xray' 2>/dev/null) >/dev/null 2>&1
 v4orv6(){
 if [ -z "$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
 echo -e "nameserver 2a00:1098:2b::1\nnameserver 2a00:1098:2c::1" > /etc/resolv.conf

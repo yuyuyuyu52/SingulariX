@@ -93,7 +93,7 @@ EOF
 install_sgx_shortcut
 
 has_env_overrides() {
-  for key in uuid vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym argo agn agk ippz warp name; do
+  for key in uuid vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym ippz warp name; do
     eval "value=\${$key:-}"
     if [ -n "$value" ]; then
       return 0
@@ -106,7 +106,6 @@ stop_managed_processes() {
   if [ -d "$HOME/sgx" ]; then
     pkill -f "$HOME/sgx/xray" >/dev/null 2>&1 || true
     pkill -f "$HOME/sgx/sing-box" >/dev/null 2>&1 || true
-    pkill -f "$HOME/sgx/cloudflared" >/dev/null 2>&1 || true
   fi
 }
 
@@ -183,7 +182,7 @@ run_install_profile() {
   profile="$1"
   stop_managed_processes
 
-  unset vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym argo agn agk ippz warp name uuid || true
+  unset vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym ippz warp name uuid || true
 
   case "$profile" in
     reality)
@@ -236,18 +235,6 @@ load_existing_env() {
   [ -f "$HOME/sgx/name" ] && export name="$(cat "$HOME/sgx/name")"
   [ -f "$HOME/sgx/uuid" ] && export uuid="$(cat "$HOME/sgx/uuid")"
 
-  if [ -f "$HOME/sgx/sbargotoken.log" ]; then
-    export agk="$(cat "$HOME/sgx/sbargotoken.log")"
-  fi
-  if [ -f "$HOME/sgx/sbargoym.log" ]; then
-    export agn="$(cat "$HOME/sgx/sbargoym.log")"
-  fi
-  if [ -f "$HOME/sgx/vlvm" ]; then
-    case "$(cat "$HOME/sgx/vlvm")" in
-      Vmess) export argo=vmpt ;;
-      Vless) export argo=vwpt ;;
-    esac
-  fi
 }
 
 build_subscription() {
@@ -391,13 +378,6 @@ show_list() {
     cat "$HOME/sgx/jh.txt"
   else
     echo "尚未生成节点列表（jh.txt 不存在）。"
-  fi
-  if [ -f "$HOME/sgx/argoport.log" ]; then
-    echo
-    echo "Argo 端口: $(cat "$HOME/sgx/argoport.log")"
-  fi
-  if [ -f "$HOME/sgx/sbargoym.log" ]; then
-    echo "Argo 域名: $(cat "$HOME/sgx/sbargoym.log")"
   fi
   echo
   build_subscription
@@ -661,7 +641,7 @@ print_menu() {
 }
 
 ensure_reinstall_if_running() {
-  if pgrep -f "$HOME/sgx/xray|$HOME/sgx/sing-box|$HOME/sgx/cloudflared" >/dev/null 2>&1; then
+  if pgrep -f "$HOME/sgx/xray|$HOME/sgx/sing-box" >/dev/null 2>&1; then
     printf "检测到已有实例运行，是否停止并按新配置重装？[y/N]: "
     read -r answer
     case "$answer" in

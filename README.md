@@ -32,10 +32,6 @@ SingulariX 是面向 Linux VPS 与容器环境的代理部署项目，核心能�
 ├── index.html
 ├── README.md
 ├── singularix.sh
-├── .github/
-│   └── workflows/
-│       ├── sap-multi-account-deploy.yml
-│       └── sap-multi-account-keepalive.yml
 └── platforms/
 	└── container/
 		└── nodejs/
