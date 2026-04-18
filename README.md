@@ -1,6 +1,14 @@
 # SingulariX
 
-## 一键安装
+## 一键安装 VLESS-Reality
+
+```bash
+vlpt=443 bash <(curl -fsSL https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/singularix.sh)
+```
+
+跳过交互菜单，直接安装 VLESS-Reality (TCP) 并在 443 端口启动。
+
+## 交互式安装（完整菜单）
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/singularix.sh)
