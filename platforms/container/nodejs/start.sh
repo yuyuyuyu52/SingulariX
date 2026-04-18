@@ -15,12 +15,11 @@ export sopt=${sopt}
 export reym=${reym}
 export cdnym=${cdnym}
 export ippz=${ippz}
-export warp=${warp}
 export name=${name}
 v46url="https://icanhazip.com"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo "SingulariX 一键部署脚本"
-echo "当前版本：V25.11.20"
+echo "当前版本：V26.04.19"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 hostname=$(uname -a | awk '{print $2}')
 op=$(cat /etc/redhat-release 2>/dev/null || cat /etc/os-release 2>/dev/null | grep -i pretty_name | cut -d \" -f2)
@@ -38,6 +37,12 @@ fi
 
 mkdir -p "$HOME/sgx"
 
+for logfile in "$HOME/sgx/xr.log" "$HOME/sgx/sb.log"; do
+if [ -f "$logfile" ] && [ "$(wc -c < "$logfile")" -gt 1048576 ]; then
+tail -c 102400 "$logfile" > "$logfile.tmp" && mv "$logfile.tmp" "$logfile"
+fi
+done
+
 load_saved_var(){
 key="$1"
 eval "cur=\${$key:-}"
@@ -53,7 +58,7 @@ fi
 }
 
 # When rerunning without env vars, recover previously saved protocol ports/options.
-for key in vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym ippz warp name uuid; do
+for key in vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym ippz name uuid; do
 load_saved_var "$key"
 done
 
@@ -113,74 +118,6 @@ return 0
 fi
 pgrep -f 'sgx/(sing-box|xray)' >/dev/null 2>&1
 }
-warpsx(){
-warpurl=""
-if [ -n "$warpurl" ]; then
-pvk=$(echo "$warpurl" | awk -F'：' '/Private_key/{print $2}' | xargs)
-wpv6=$(echo "$warpurl" | awk -F'：' '/IPV6/{print $2}' | xargs)
-res=$(echo "$warpurl" | awk -F'：' '/reserved/{print $2}' | xargs)
-else
-wpv6='2606:4700:110:8d8d:1845:c39f:2dd5:a03a'
-pvk='52cuYFgCJXp0LAq7+nWJIbCXXgU9eGggOc+Hlfz5u6A'
-res='[215, 69, 233]'
-fi
-if [ -n "$name" ]; then
-sxname=$name-
-echo "$sxname" > "$HOME/sgx/name"
-echo
-echo "所有节点名称前缀：$name"
-fi
-v4v6
-if echo "$v6" | grep -q '^2a09' || echo "$v4" | grep -q '^104.28'; then
-s1outtag=direct; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"';
-echo "请注意：你已安装了warp"
-else
-if [ -z "$wap" ]; then
-s1outtag=direct; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"';
-else
-case "$warp" in
-""|sx|xs) s1outtag=warp-out; s2outtag=warp-out; x1outtag=warp-out; x2outtag=warp-out; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"' ;;
-s ) s1outtag=warp-out; s2outtag=warp-out; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"' ;;
-s4) s1outtag=warp-out; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"0.0.0.0/0"' ;;
-s6) s1outtag=warp-out; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0"' ;;
-x ) s1outtag=direct; s2outtag=direct; x1outtag=warp-out; x2outtag=warp-out; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"' ;;
-x4) s1outtag=direct; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"' ;;
-x6) s1outtag=direct; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"::/0"'; sip='"::/0", "0.0.0.0/0"' ;;
-s4x4|x4s4) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"0.0.0.0/0"'; sip='"0.0.0.0/0"' ;;
-s4x6|x6s4) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"::/0"'; sip='"0.0.0.0/0"' ;;
-s6x4|x4s6) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"0.0.0.0/0"'; sip='"::/0"' ;;
-s6x6|x6s6) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=direct; xip='"::/0"'; sip='"::/0"' ;;
-sx4|x4s) s1outtag=warp-out; s2outtag=warp-out; x1outtag=warp-out; x2outtag=direct; xip='"0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"' ;;
-sx6|x6s) s1outtag=warp-out; s2outtag=warp-out; x1outtag=warp-out; x2outtag=direct; xip='"::/0"'; sip='"::/0", "0.0.0.0/0"' ;;
-xs4|s4x) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=warp-out; xip='"::/0", "0.0.0.0/0"'; sip='"0.0.0.0/0"' ;;
-xs6|s6x) s1outtag=warp-out; s2outtag=direct; x1outtag=warp-out; x2outtag=warp-out; xip='"::/0", "0.0.0.0/0"'; sip='"::/0"' ;;
-* ) s1outtag=direct; s2outtag=direct; x1outtag=direct; x2outtag=direct; xip='"::/0", "0.0.0.0/0"'; sip='"::/0", "0.0.0.0/0"' ;;
-esac
-fi
-fi
-case "$warp" in *x4*) wxryx='ForceIPv4' ;; *x6*) wxryx='ForceIPv6' ;; *) wxryx='ForceIPv6v4' ;; esac
-if command -v curl >/dev/null 2>&1; then
-curl -s4m5 -k "$v46url" >/dev/null 2>&1 && v4_ok=true
-elif command -v wget >/dev/null 2>&1; then
-timeout 3 wget -4 --tries=2 -qO- "$v46url" >/dev/null 2>&1 && v4_ok=true
-fi
-if command -v curl >/dev/null 2>&1; then
-curl -s6m5 -k "$v46url" >/dev/null 2>&1 && v6_ok=true
-elif command -v wget >/dev/null 2>&1; then
-timeout 3 wget -6 --tries=2 -qO- "$v46url" >/dev/null 2>&1 && v6_ok=true
-fi
-if [ "$v4_ok" = true ] && [ "$v6_ok" = true ]; then
-case "$warp" in *s4*) sbyx='prefer_ipv4' ;; *) sbyx='prefer_ipv6' ;; esac
-case "$warp" in *x4*) xryx='ForceIPv4v6' ;; *x*) xryx='ForceIPv6v4' ;; *) xryx='ForceIPv4v6' ;; esac
-elif [ "$v4_ok" = true ] && [ "$v6_ok" != true ]; then
-case "$warp" in *s4*) sbyx='ipv4_only' ;; *) sbyx='prefer_ipv6' ;; esac
-case "$warp" in *x4*) xryx='ForceIPv4' ;; *x*) xryx='ForceIPv6v4' ;; *) xryx='ForceIPv4v6' ;; esac
-elif [ "$v4_ok" != true ] && [ "$v6_ok" = true ]; then
-case "$warp" in *s6*) sbyx='ipv6_only' ;; *) sbyx='prefer_ipv4' ;; esac
-case "$warp" in *x6*) xryx='ForceIPv6' ;; *x*) xryx='ForceIPv4v6' ;; *) xryx='ForceIPv6v4' ;; esac
-fi
-}
-
 insuuid(){
 if [ -z "$uuid" ] && [ ! -e "$HOME/sgx/uuid" ]; then
 if [ -x "$HOME/sgx/sing-box" ] && binary_ok "$HOME/sgx/sing-box" version; then
@@ -731,67 +668,23 @@ cat >> "$HOME/sgx/xr.json" <<EOF
       "protocol": "freedom",
       "tag": "direct",
       "settings": {
-      "domainStrategy":"${xryx}"
-     }
+        "domainStrategy":"${xryx}"
+      }
     }
-EOF
-if [ "$x1outtag" = "warp-out" ] || [ "$x2outtag" = "warp-out" ]; then
-cat >> "$HOME/sgx/xr.json" <<EOF
-    ,{
-      "tag": "x-warp-out",
-      "protocol": "wireguard",
-      "settings": {
-        "secretKey": "${pvk}",
-        "address": [
-          "172.16.0.2/32",
-          "${wpv6}/128"
-        ],
-        "peers": [
-          {
-            "publicKey": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
-            "allowedIPs": [
-              "0.0.0.0/0",
-              "::/0"
-            ],
-            "endpoint": "${xendip}:2408"
-          }
-        ],
-        "reserved": ${res}
-        }
-    },
-    {
-      "tag":"warp-out",
-      "protocol":"freedom",
-        "settings":{
-        "domainStrategy":"${wxryx}"
-       },
-       "proxySettings":{
-       "tag":"x-warp-out"
-     }
-}
-EOF
-fi
-cat >> "$HOME/sgx/xr.json" <<EOF
   ],
   "routing": {
     "domainStrategy": "IPOnDemand",
     "rules": [
       {
         "type": "field",
-        "ip": [ ${xip} ],
         "network": "tcp,udp",
-        "outboundTag": "${x1outtag}"
-      },
-      {
-        "type": "field",
-        "network": "tcp,udp",
-        "outboundTag": "${x2outtag}"
+        "outboundTag": "direct"
       }
     ]
   }
 }
 EOF
-nohup "$HOME/sgx/xray" run -c "$HOME/sgx/xr.json" >/dev/null 2>&1 &
+nohup "$HOME/sgx/xray" run -c "$HOME/sgx/xr.json" >> "$HOME/sgx/xr.log" 2>&1 &
 fi
 if [ -e "$HOME/sgx/sb.json" ]; then
 sed -i '${s/,\s*$//}' "$HOME/sgx/sb.json"
@@ -803,52 +696,19 @@ cat >> "$HOME/sgx/sb.json" <<EOF
       "tag": "direct"
     }
   ],
-EOF
-if [ "$s1outtag" = "warp-out" ] || [ "$s2outtag" = "warp-out" ]; then
-cat >> "$HOME/sgx/sb.json" <<EOF
-  "endpoints": [
-    {
-      "type": "wireguard",
-      "tag": "warp-out",
-      "address": [
-        "172.16.0.2/32",
-        "${wpv6}/128"
-      ],
-      "private_key": "${pvk}",
-      "peers": [
-        {
-          "address": "${sendip}",
-          "port": 2408,
-          "public_key": "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=",
-          "allowed_ips": [
-            "0.0.0.0/0",
-            "::/0"
-          ],
-          "reserved": ${res}
-        }
-      ]
-    }
-  ],
-EOF
-fi
-cat >> "$HOME/sgx/sb.json" <<EOF
   "route": {
     "rules": [
-       {
-          "action": "sniff"
-        },
-       {
-        "action": "resolve",
-         "strategy": "${sbyx}"
-       },
       {
-        "ip_cidr": [ ${sip} ],
-        "outbound": "${s1outtag}"
+        "action": "sniff"
+      },
+      {
+        "action": "resolve",
+        "strategy": "${sbyx}"
       }
     ],
-    "final": "${s2outtag}"
+    "final": "direct"
   },
-    "dns": {
+  "dns": {
     "servers": [
       {
         "type": "https",
@@ -859,28 +719,31 @@ cat >> "$HOME/sgx/sb.json" <<EOF
   }
 }
 EOF
-nohup "$HOME/sgx/sing-box" run -c "$HOME/sgx/sb.json" >/dev/null 2>&1 &
+nohup "$HOME/sgx/sing-box" run -c "$HOME/sgx/sb.json" >> "$HOME/sgx/sb.log" 2>&1 &
 fi
 }
 ins(){
+if [ -n "$name" ]; then
+sxname=$name-
+echo "$sxname" > "$HOME/sgx/name"
+echo
+echo "所有节点名称前缀：$name"
+fi
 if [ -z "$hypt" ] && [ -z "$tupt" ] && [ -z "$anpt" ] && [ -z "$arpt" ] && [ -z "$sspt" ]; then
 installxray
 xrsbvm
 xrsbso
-warpsx
 xrsbout
 elif [ -z "$xhpt" ] && [ -z "$vlpt" ] && [ -z "$vxpt" ] && [ -z "$vwpt" ]; then
 installsb
 xrsbvm
 xrsbso
-warpsx
 xrsbout
 else
 installsb
 installxray
 xrsbvm
 xrsbso
-warpsx
 xrsbout
 fi
 }
@@ -924,12 +787,6 @@ vps_ipv4="$v4"
 vps_ipv6='无IPV6'
 location="$v4dq"
 fi
-if echo "$v6" | grep -q '^2a09'; then
-w6="【WARP】"
-fi
-if echo "$v4" | grep -q '^104.28'; then
-w4="【WARP】"
-fi
 sleep 1
 if [ "$ippz" = "4" ]; then
 if [ -z "$v4" ]; then
@@ -958,10 +815,6 @@ xvvmcdnym=$(cat "$HOME/sgx/cdnym" 2>/dev/null)
 echo "*********************************************************"
 echo "*********************************************************"
 echo "SingulariX 输出节点配置如下："
-echo
-case "$server_ip" in
-104.28*|\[2a09*) echo "检测到有WARP的IP作为客户端地址 (104.28或者2a09开头的IP)，请把客户端地址上的WARP的IP手动更换为VPS本地IPV4或者IPV6地址" && sleep 3 ;;
-esac
 echo
 reym=$(cat "$HOME/sgx/reym" 2>/dev/null)
 cfip() { echo $((RANDOM % 13 + 1)); }
@@ -1102,15 +955,15 @@ if [ -z "$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k "$v46url" 2>/dev/n
 echo -e "nameserver 2a00:1098:2b::1\nnameserver 2a00:1098:2c::1" > /etc/resolv.conf
 fi
 if [ -n "$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
-sendip="2606:4700:d0::a29f:c001"
-xendip="[2606:4700:d0::a29f:c001]"
 xsdns="[2001:4860:4860::8888]"
 sbdnsyx="ipv6_only"
+xryx="ForceIPv6v4"
+sbyx="prefer_ipv6"
 else
-sendip="162.159.192.1"
-xendip="162.159.192.1"
 xsdns="8.8.8.8"
 sbdnsyx="ipv4_only"
+xryx="ForceIPv4v6"
+sbyx="prefer_ipv4"
 fi
 }
 v4orv6

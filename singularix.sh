@@ -93,7 +93,7 @@ EOF
 install_sgx_shortcut
 
 has_env_overrides() {
-  for key in uuid vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym ippz warp name; do
+  for key in uuid vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym ippz name; do
     eval "value=\${$key:-}"
     if [ -n "$value" ]; then
       return 0
@@ -182,7 +182,7 @@ run_install_profile() {
   profile="$1"
   stop_managed_processes
 
-  unset vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym ippz warp name uuid || true
+  unset vlpt vmpt vwpt hypt tupt xhpt vxpt anpt arpt sspt sopt reym cdnym ippz name uuid || true
 
   case "$profile" in
     reality)

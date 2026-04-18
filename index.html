@@ -96,7 +96,7 @@
       grid-column: 1;
       grid-row: 1 / 3;
     }
-    .outbound-warp {
+    .global-config {
       grid-column: 2;
       grid-row: 1;
     }
@@ -417,7 +417,7 @@
         </div>
       </section>
 
-      <section class="card outbound-warp">
+      <section class="card global-config">
         <h2>相关全局配置调整： </h2>
         <div class="row">
           <label>UUID 密码 <span class="pill">uuid</span></label>
@@ -428,27 +428,6 @@
         </div>
         <div class="row"><label>Reality 域名 <span class="pill">reym</span></label><input id="reym" type="text" placeholder="留空则默认apple.com"/></div>
         <div class="row"><label>CF解析IP的域名<span class="pill">cdnym</span></label><input id="cdnym" type="text" placeholder="Vmess-ws、Vless-xhttp/ws-enc启用80、回源CDN时可用" disabled/></div>
-        <div class="row"><label>套WARP-IP出站 <span class="pill">warp</span></label>
-          <select id="warp">
-            <option value="">默认 服务器本地IP出站</option>
-            <option value="s">1、Singbox套WARP IPv4+IPv6、Xray本地IP</option>
-            <option value="s4">2、Singbox套WARP IPv4、Xray本地IP</option>
-            <option value="s6">3、Singbox套WARP IPv6、Xray本地IP</option>
-            <option value="x">4、Singbox本地IP、Xray套WARP IPv4+IPv6</option>
-            <option value="x4">5、Singbox本地IP、Xray套WARP IPv4</option>
-            <option value="x6">6、Singbox本地IP、Xray套WARP IPv6</option>
-            <option value="s4x4">7、Singbox+Xray同时套WARP IPv4</option>
-            <option value="s4x6">8、Singbox套WARP IPv4、Xray套WARP IPv6</option>
-            <option value="s6x4">9、Singbox套WARP IPv6、Xray套WARP IPv4</option>
-            <option value="s6x6">10、Singbox+Xray同时套WARP IPv6</option>
-            <option value="sx4">11、Singbox套WARP IPv4+IPv6、Xray套WARP IPv4</option>
-            <option value="sx6">12、Singbox套WARP IPv4+IPv6、Xray套WARP IPv6</option>
-            <option value="s4x">13、Singbox套WARP IPv4、Xray套WARP IPv4+IPv6</option>
-            <option value="s6x">14、Singbox套WARP IPv6、Xray套WARP IPv4+IPv6</option>
-            <option value="sx">15、Singbox+Xray同时套WARP IPv4+IPv6</option>
-          </select>
-        </div>
-        
         <div class="row"><label>IPv4/IPv6 配置导出 <span class="pill">ippz</span></label>
           <select id="ippz">
             <option value="">默认 自动</option>
@@ -506,7 +485,7 @@
   const CURL = 'bash <(curl -Ls https://raw.githubusercontent.com/YOUR_GITHUB_USER/SingulariX/main/singularix.sh)';
   const WGET = 'bash <(wget -qO- https://raw.githubusercontent.com/YOUR_GITHUB_USER/SingulariX/main/singularix.sh)';
   const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-  const optIds = ['warp','ippz','uuid','reym','cdnym','name', 'oap'];
+  const optIds = ['ippz','uuid','reym','cdnym','name', 'oap'];
 
   const vmessWsCheckbox = document.querySelector('[data-proto="vmpt"]');
   const vlessWsVCheckbox = document.querySelector('[data-proto="vwpt"]');
@@ -546,7 +525,6 @@
     textInputs.forEach(inp => {
         inp.value = '';
     });
-    document.getElementById('warp').value = '';
     if (!preserveIppz) {
         ippzSelect.value = '';
     }
@@ -651,7 +629,7 @@
     const keys = Object.keys(m);
     const ordered = [];
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
-    ['warp', 'uuid', 'reym', 'cdnym', 'name', 'ippz'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
+    ['uuid', 'reym', 'cdnym', 'name', 'ippz'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
     if (keys.includes('oap')) ordered.push('oap');
     keys.forEach(k => { if (!ordered.includes(k)) ordered.push(k); });
 
