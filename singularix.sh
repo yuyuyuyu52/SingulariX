@@ -234,12 +234,235 @@ load_existing_env() {
 
 }
 
+generate_singbox_sub() {
+  _sb_out="$1"
+  _ip=$(echo "$2" | tr -d '[]')
+  _id=$(cat "$HOME/sgx/uuid" 2>/dev/null || true)
+  _ry=$(cat "$HOME/sgx/reym" 2>/dev/null || true)
+  _np=$(cat "$HOME/sgx/name" 2>/dev/null || true)
+  _xpk=$(cat "$HOME/sgx/xrk/public_key" 2>/dev/null || true)
+  _xsi=$(cat "$HOME/sgx/xrk/short_id" 2>/dev/null || true)
+  _spk=$(cat "$HOME/sgx/sbk/public_key" 2>/dev/null || true)
+  _ssi=$(cat "$HOME/sgx/sbk/short_id" 2>/dev/null || true)
+  _sk=$(cat "$HOME/sgx/sskey" 2>/dev/null || true)
+  _hn=$(hostname 2>/dev/null || echo "sgx")
+
+  printf '{"outbounds":[' > "$_sb_out"
+  _sep=""
+
+  _sb_entry() {
+    printf '%s' "$_sep" >> "$_sb_out"
+    _sep=","
+  }
+
+  if [ -f "$HOME/sgx/vlpt" ]; then
+    _p=$(cat "$HOME/sgx/vlpt")
+    _sb_entry
+    cat >> "$_sb_out" <<EOF
+{"type":"vless","tag":"${_np}vl-reality-${_hn}","server":"$_ip","server_port":$_p,"uuid":"$_id","flow":"xtls-rprx-vision","tls":{"enabled":true,"server_name":"$_ry","utls":{"enabled":true,"fingerprint":"chrome"},"reality":{"enabled":true,"public_key":"$_xpk","short_id":"$_xsi"}}}
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/hypt" ]; then
+    _p=$(cat "$HOME/sgx/hypt")
+    _sb_entry
+    cat >> "$_sb_out" <<EOF
+{"type":"hysteria2","tag":"${_np}hy2-${_hn}","server":"$_ip","server_port":$_p,"password":"$_id","tls":{"enabled":true,"server_name":"www.bing.com","insecure":true}}
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/tupt" ]; then
+    _p=$(cat "$HOME/sgx/tupt")
+    _sb_entry
+    cat >> "$_sb_out" <<EOF
+{"type":"tuic","tag":"${_np}tuic-${_hn}","server":"$_ip","server_port":$_p,"uuid":"$_id","password":"$_id","congestion_control":"bbr","tls":{"enabled":true,"server_name":"www.bing.com","insecure":true,"alpn":["h3"]}}
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/sspt" ]; then
+    _p=$(cat "$HOME/sgx/sspt")
+    _sb_entry
+    cat >> "$_sb_out" <<EOF
+{"type":"shadowsocks","tag":"${_np}ss-2022-${_hn}","server":"$_ip","server_port":$_p,"method":"2022-blake3-aes-128-gcm","password":"$_sk"}
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/vmpt" ]; then
+    _p=$(cat "$HOME/sgx/vmpt")
+    _sb_entry
+    cat >> "$_sb_out" <<EOF
+{"type":"vmess","tag":"${_np}vmess-ws-${_hn}","server":"$_ip","server_port":$_p,"uuid":"$_id","security":"auto","transport":{"type":"ws","path":"/$_id-vm","headers":{"Host":"www.bing.com"}}}
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/anpt" ]; then
+    _p=$(cat "$HOME/sgx/anpt")
+    _sb_entry
+    cat >> "$_sb_out" <<EOF
+{"type":"anytls","tag":"${_np}anytls-${_hn}","server":"$_ip","server_port":$_p,"password":"$_id","tls":{"enabled":true,"insecure":true}}
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/arpt" ]; then
+    _p=$(cat "$HOME/sgx/arpt")
+    _sb_entry
+    cat >> "$_sb_out" <<EOF
+{"type":"anytls","tag":"${_np}any-reality-${_hn}","server":"$_ip","server_port":$_p,"password":"$_id","tls":{"enabled":true,"server_name":"$_ry","utls":{"enabled":true,"fingerprint":"chrome"},"reality":{"enabled":true,"public_key":"$_spk","short_id":"$_ssi"}}}
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/sopt" ]; then
+    _p=$(cat "$HOME/sgx/sopt")
+    _sb_entry
+    cat >> "$_sb_out" <<EOF
+{"type":"socks","tag":"${_np}socks5-${_hn}","server":"$_ip","server_port":$_p,"username":"$_id","password":"$_id"}
+EOF
+  fi
+
+  printf ']}' >> "$_sb_out"
+}
+
+generate_clash_sub() {
+  _cl_out="$1"
+  _ip=$(echo "$2" | tr -d '[]')
+  _id=$(cat "$HOME/sgx/uuid" 2>/dev/null || true)
+  _ry=$(cat "$HOME/sgx/reym" 2>/dev/null || true)
+  _np=$(cat "$HOME/sgx/name" 2>/dev/null || true)
+  _xpk=$(cat "$HOME/sgx/xrk/public_key" 2>/dev/null || true)
+  _xsi=$(cat "$HOME/sgx/xrk/short_id" 2>/dev/null || true)
+  _sk=$(cat "$HOME/sgx/sskey" 2>/dev/null || true)
+  _hn=$(hostname 2>/dev/null || echo "sgx")
+  _names=""
+
+  cat > "$_cl_out" <<'CLHDR'
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+
+proxies:
+CLHDR
+
+  if [ -f "$HOME/sgx/vlpt" ]; then
+    _p=$(cat "$HOME/sgx/vlpt")
+    _t="${_np}vl-reality-${_hn}"
+    _names="$_names $_t"
+    cat >> "$_cl_out" <<EOF
+  - name: "$_t"
+    type: vless
+    server: $_ip
+    port: $_p
+    uuid: $_id
+    network: tcp
+    flow: xtls-rprx-vision
+    tls: true
+    servername: $_ry
+    reality-opts:
+      public-key: $_xpk
+      short-id: $_xsi
+    client-fingerprint: chrome
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/hypt" ]; then
+    _p=$(cat "$HOME/sgx/hypt")
+    _t="${_np}hy2-${_hn}"
+    _names="$_names $_t"
+    cat >> "$_cl_out" <<EOF
+  - name: "$_t"
+    type: hysteria2
+    server: $_ip
+    port: $_p
+    password: $_id
+    sni: www.bing.com
+    skip-cert-verify: true
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/tupt" ]; then
+    _p=$(cat "$HOME/sgx/tupt")
+    _t="${_np}tuic-${_hn}"
+    _names="$_names $_t"
+    cat >> "$_cl_out" <<EOF
+  - name: "$_t"
+    type: tuic
+    server: $_ip
+    port: $_p
+    uuid: $_id
+    password: $_id
+    congestion-controller: bbr
+    sni: www.bing.com
+    skip-cert-verify: true
+    alpn:
+      - h3
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/sspt" ]; then
+    _p=$(cat "$HOME/sgx/sspt")
+    _t="${_np}ss-2022-${_hn}"
+    _names="$_names $_t"
+    cat >> "$_cl_out" <<EOF
+  - name: "$_t"
+    type: ss
+    server: $_ip
+    port: $_p
+    cipher: 2022-blake3-aes-128-gcm
+    password: "$_sk"
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/vmpt" ]; then
+    _p=$(cat "$HOME/sgx/vmpt")
+    _t="${_np}vmess-ws-${_hn}"
+    _names="$_names $_t"
+    cat >> "$_cl_out" <<EOF
+  - name: "$_t"
+    type: vmess
+    server: $_ip
+    port: $_p
+    uuid: $_id
+    alterId: 0
+    cipher: auto
+    network: ws
+    ws-opts:
+      path: /$_id-vm
+      headers:
+        Host: www.bing.com
+EOF
+  fi
+
+  if [ -f "$HOME/sgx/sopt" ]; then
+    _p=$(cat "$HOME/sgx/sopt")
+    _t="${_np}socks5-${_hn}"
+    _names="$_names $_t"
+    cat >> "$_cl_out" <<EOF
+  - name: "$_t"
+    type: socks5
+    server: $_ip
+    port: $_p
+    username: $_id
+    password: $_id
+EOF
+  fi
+
+  printf '\nproxy-groups:\n' >> "$_cl_out"
+  printf '  - name: "Auto"\n    type: url-test\n    url: http://www.gstatic.com/generate_204\n    interval: 300\n    proxies:\n' >> "$_cl_out"
+  for _nm in $_names; do
+    printf '      - "%s"\n' "$_nm" >> "$_cl_out"
+  done
+  printf '  - name: "Select"\n    type: select\n    proxies:\n      - "Auto"\n' >> "$_cl_out"
+  for _nm in $_names; do
+    printf '      - "%s"\n' "$_nm" >> "$_cl_out"
+  done
+  printf '\nrules:\n  - MATCH,Select\n' >> "$_cl_out"
+}
+
 build_subscription() {
   sub_root="$HOME/sgx/sub"
   src_file="$HOME/sgx/jh.txt"
   base64_file="$sub_root/index"
   sub_port=12345
-  converter_url="${SUBCONVERTER_URL:-https://api.v1.mk/sub}"
 
   if [ ! -s "$src_file" ]; then
     echo "Subscription not generated (jh.txt is empty)."
@@ -263,63 +486,39 @@ build_subscription() {
   mkdir -p "$sub_root/$sub_path"
   cp "$src_file" "$sub_root/$sub_path/raw"
   cp "$base64_file" "$sub_root/$sub_path/base64"
-  cp "$base64_file" "$sub_root/$sub_path/config"
 
-  # Try to pre-generate converted subscription files. If conversion fails,
-  # keep online conversion links as fallback.
-  url_encode() {
-    input="$1"
-    if command -v python3 >/dev/null 2>&1; then
-      python3 - "$input" <<'PY'
-import sys
-from urllib.parse import quote
-print(quote(sys.argv[1], safe=''))
-PY
-      return
-    fi
-    # Minimal fallback when python3 is unavailable.
-    echo "$input" | sed 's/%/%25/g; s/:/%3A/g; s/\//%2F/g; s/?/%3F/g; s/&/%26/g; s/=/%3D/g; s/\[/%5B/g; s/\]/%5D/g'
-  }
+  if [ -f "$HOME/sgx/server_ip.log" ]; then
+    server_ip=$(cat "$HOME/sgx/server_ip.log")
+  elif command -v curl >/dev/null 2>&1; then
+    server_ip=$(curl -s4m5 icanhazip.com || curl -s6m5 icanhazip.com || true)
+  else
+    server_ip=$(wget -qO- -4 icanhazip.com 2>/dev/null || wget -qO- -6 icanhazip.com 2>/dev/null || true)
+  fi
+  server_ip=$(echo "$server_ip" | tr -d '[:space:]')
+  if echo "$server_ip" | grep -q ':' && ! echo "$server_ip" | grep -q '^\['; then
+    server_ip="[$server_ip]"
+  fi
+
+  if [ -z "$server_ip" ]; then
+    echo "Subscription files generated in: $sub_root/$sub_path/"
+    return
+  fi
+
+  generate_singbox_sub "$sub_root/$sub_path/singbox" "$server_ip"
+  generate_clash_sub "$sub_root/$sub_path/clash" "$server_ip"
 
   if command -v python3 >/dev/null 2>&1; then
     if ! pgrep -f "python3 -m http.server $sub_port --directory $sub_root" >/dev/null 2>&1; then
       nohup python3 -m http.server "$sub_port" --directory "$sub_root" >/dev/null 2>&1 &
     fi
-
-    if [ -f "$HOME/sgx/server_ip.log" ]; then
-      server_ip=$(cat "$HOME/sgx/server_ip.log")
-    elif command -v curl >/dev/null 2>&1; then
-      server_ip=$(curl -s4m5 icanhazip.com || curl -s6m5 icanhazip.com || true)
-    else
-      server_ip=$(wget -qO- -4 icanhazip.com 2>/dev/null || wget -qO- -6 icanhazip.com 2>/dev/null || true)
-    fi
-
-    server_ip=$(echo "$server_ip" | tr -d '[:space:]')
-    if echo "$server_ip" | grep -q ':' && ! echo "$server_ip" | grep -q '^\['; then
-      server_ip="[$server_ip]"
-    fi
-
-    if [ -n "$server_ip" ]; then
-      raw_url="http://$server_ip:$sub_port/$sub_path/raw"
-      base64_url="http://$server_ip:$sub_port/$sub_path/base64"
-      base64_url_enc=$(url_encode "$base64_url")
-
-      singbox_url="$converter_url?target=singbox&new_name=true&url=$base64_url_enc&insert=false&emoji=true"
-      clash_url="$converter_url?target=clash&new_name=true&url=$base64_url_enc&insert=false&emoji=true"
-
-      echo "Subscribe (Base64): $base64_url"
-      echo "Subscribe (Sing-box): $singbox_url"
-      echo "Subscribe (Clash): $clash_url"
-      echo "Raw URI: $raw_url"
-    else
-      echo "Subscription file generated: $sub_root/$sub_path/base64"
-      echo "ShadowBox/Sing-box convert URL: $converter_url?target=singbox&new_name=true&url=<Base64-URL-encoded>&insert=false&emoji=true"
-      echo "Clash convert URL: $converter_url?target=clash&new_name=true&url=<Base64-URL-encoded>&insert=false&emoji=true"
-    fi
+    echo "Subscribe (Base64):       http://$server_ip:$sub_port/$sub_path/base64"
+    echo "Subscribe (Sing-box):     http://$server_ip:$sub_port/$sub_path/singbox"
+    echo "Subscribe (Clash):        http://$server_ip:$sub_port/$sub_path/clash"
+    echo "Subscribe (Raw URI):      http://$server_ip:$sub_port/$sub_path/raw"
   else
-    echo "python3 not found. Subscription file generated: $sub_root/$sub_path/base64"
-    echo "Raw node file: $sub_root/$sub_path/raw"
-    echo "Install python3 and run 'list' again to output accessible subscription URLs."
+    echo "Subscription files generated in: $sub_root/$sub_path/"
+    echo "  base64  singbox  clash  raw"
+    echo "Install python3 to serve subscriptions via HTTP."
   fi
 }
 
