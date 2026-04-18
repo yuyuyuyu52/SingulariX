@@ -487,6 +487,7 @@ uninstall_all() {
     y|Y)
       stop_managed_processes
       rm -rf "$HOME/sgx"
+      rm -f /usr/local/bin/sgx "$HOME/.local/bin/sgx" 2>/dev/null || true
       echo "已卸载完成。"
       ;;
     *)
