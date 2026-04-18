@@ -1,6 +1,6 @@
 # SingulariX
 
-## 一键安
+## 一键安装
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/singularix.sh)
@@ -80,8 +80,6 @@ sgx
 ```
 
 注意：`0`、`1`、`2` 这些数字是菜单内选项，不是 Shell 命令。请先进入脚本菜单再输入。
-
-``
 
 ### 2.1 订阅输出格式
 执行 `./singularix.sh list` 时会同时输出：

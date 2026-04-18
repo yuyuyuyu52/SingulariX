@@ -166,7 +166,7 @@ fi
 cat > "$HOME/sgx/xr.json" <<EOF
 {
   "log": {
-  "loglevel": "none"
+  "loglevel": "warning"
   },
   "dns": {
     "servers": [
