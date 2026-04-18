@@ -285,11 +285,11 @@ PY
     url="$1"
     out="$2"
     if command -v curl >/dev/null 2>&1; then
-      curl -LfsS --retry 1 -o "$out" "$url" >/dev/null 2>&1
+      curl -LfsS -m 10 --retry 1 -o "$out" "$url" >/dev/null 2>&1
       return $?
     fi
     if command -v wget >/dev/null 2>&1; then
-      wget -qO "$out" "$url"
+      timeout 10 wget -qO "$out" "$url"
       return $?
     fi
     return 127
@@ -377,7 +377,7 @@ show_list() {
     echo "No node list generated (jh.txt not found)."
   fi
   echo
-  build_subscription
+  build_subscription || echo "Subscription generation failed."
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
   if [ -t 0 ] && [ "${SGX_NO_PAUSE:-}" != "1" ]; then
     printf "Press Enter to return to menu..."
