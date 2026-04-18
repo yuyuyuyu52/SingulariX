@@ -1,5 +1,15 @@
 # SingulariX
 
+## 一键安装（可直接复制）
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/singularix.sh)
+```
+
+```bash
+bash <(wget -qO- https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/singularix.sh)
+```
+
 SingulariX 是面向 Linux VPS 与容器环境的代理部署项目，核心能力由 Shell 脚本与 Node.js 容器入口共同提供。
 
 ## 核心特性
