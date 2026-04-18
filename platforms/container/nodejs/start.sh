@@ -38,6 +38,12 @@ aarch64) cpu=arm64;;
 x86_64) cpu=amd64;;
 *) echo "目前脚本不支持$(uname -m)架构" && exit
 esac
+
+if [ "$(id -u)" -ne 0 ]; then
+echo "错误：仅支持 root 用户安装与管理，请先执行 sudo -i 后重试。"
+exit 1
+fi
+
 mkdir -p "$HOME/agsbx"
 
 load_saved_var(){

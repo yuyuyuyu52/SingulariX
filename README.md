@@ -1,6 +1,6 @@
 # SingulariX
 
-## 一键安装（可直接复制）
+## 一键安
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/singularix.sh)
@@ -9,6 +9,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/s
 ```bash
 bash <(wget -qO- https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/singularix.sh)
 ```
+
+安装限制：仅支持 root 用户安装与管理（普通用户会被拒绝执行安装流程）。
 
 默认会在安装流程中自动尝试开启 BBR（需要 root 权限）。
 如需关闭该行为，可执行：
