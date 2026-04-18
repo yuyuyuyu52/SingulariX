@@ -18,18 +18,18 @@ export ippz=${ippz}
 export name=${name}
 v46url="https://icanhazip.com"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-echo "SingulariX 一键部署脚本"
-echo "当前版本：V26.04.19"
+echo "SingulariX Deployment Script"
+echo "Version: V26.04.19"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 hostname=$(uname -a | awk '{print $2}')
 case $(uname -m) in
 aarch64) cpu=arm64;;
 x86_64) cpu=amd64;;
-*) echo "目前脚本不支持$(uname -m)架构" && exit
+*) echo "Unsupported architecture: $(uname -m)" && exit
 esac
 
 if [ "$(id -u)" -ne 0 ]; then
-echo "错误：仅支持 root 用户安装与管理，请先执行 sudo -i 后重试。"
+echo "Error: root privileges required. Run 'sudo -i' first."
 exit 1
 fi
 
@@ -85,7 +85,7 @@ fi
 sync_cdn_domain(){
 if [ -n "$cdnym" ]; then
 echo "$cdnym" > "$HOME/sgx/cdnym"
-echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
+echo "CDN host domain (ensure IP is resolved to CF domain): $cdnym"
 fi
 }
 
@@ -125,22 +125,22 @@ fi
 if [ -z "$uuid" ] && [ -r /proc/sys/kernel/random/uuid ]; then
 uuid=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || true)
 fi
-[ -n "$uuid" ] || { echo "生成 UUID 失败，安装终止。"; exit 1; }
+[ -n "$uuid" ] || { echo "Failed to generate UUID, aborting."; exit 1; }
 echo "$uuid" > "$HOME/sgx/uuid"
 elif [ -n "$uuid" ]; then
 echo "$uuid" > "$HOME/sgx/uuid"
 fi
 uuid=$(cat "$HOME/sgx/uuid")
-echo "UUID密码：$uuid"
+echo "UUID/Password: $uuid"
 }
 installxray(){
 echo
-echo "=========启用xray内核========="
+echo "========= Enabling Xray ========="
 mkdir -p "$HOME/sgx/xrk"
 if [ ! -e "$HOME/sgx/xray" ]; then
 [ "$cpu" = "amd64" ] && xarch="64" || xarch="arm64-v8a"
 url="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$xarch.zip"; out="$HOME/sgx/xray.zip"
-download_asset "$url" "$out" || { echo "下载 Xray 失败，请稍后重试。"; exit 1; }
+download_asset "$url" "$out" || { echo "Failed to download Xray, please retry later."; exit 1; }
 if ! command -v unzip >/dev/null 2>&1 && ! command -v bsdtar >/dev/null 2>&1; then
 if command -v apt >/dev/null 2>&1; then
 apt update >/dev/null 2>&1 && apt install -y unzip >/dev/null 2>&1
@@ -155,13 +155,13 @@ unzip -o "$out" xray -d "$HOME/sgx" >/dev/null 2>&1
 elif command -v bsdtar >/dev/null 2>&1; then
 bsdtar -xf "$out" -C "$HOME/sgx" xray >/dev/null 2>&1
 else
-echo "缺少 unzip/bsdtar，无法解压 Xray，请先安装 unzip" && exit 1
+echo "Missing unzip/bsdtar, cannot extract Xray. Install unzip first." && exit 1
 fi
 rm -f "$out"
 chmod +x "$HOME/sgx/xray"
-binary_ok "$HOME/sgx/xray" version || { echo "Xray 内核执行失败（可能下载损坏或架构不兼容），安装终止。"; exit 1; }
+binary_ok "$HOME/sgx/xray" version || { echo "Xray binary failed (corrupted download or incompatible arch), aborting."; exit 1; }
 sbcore=$("$HOME/sgx/xray" version 2>/dev/null | awk '/^Xray/{print $2}' | head -n1)
-echo "已安装Xray正式版内核：$sbcore"
+echo "Xray installed: $sbcore"
 fi
 cat > "$HOME/sgx/xr.json" <<EOF
 {
@@ -181,11 +181,11 @@ if [ -z "$reym" ]; then
 reym=apple.com
 fi
 echo "$reym" > "$HOME/sgx/reym"
-echo "Reality域名：$reym"
+echo "Reality domain: $reym"
 if [ ! -e "$HOME/sgx/xrk/private_key" ]; then
 key_pair=$("$HOME/sgx/xray" x25519)
-private_key=$(echo "$key_pair" | grep "PrivateKey" | awk '{print $2}')
-public_key=$(echo "$key_pair" | grep "Password" | awk '{print $2}')
+private_key=$(echo "$key_pair" | awk '/rivate/ {print $NF}')
+public_key=$(echo "$key_pair" | awk '/ublic/ {print $NF}')
 short_id=$(date +%s%N | sha256sum | cut -c 1-8)
 echo "$private_key" > "$HOME/sgx/xrk/private_key"
 echo "$public_key" > "$HOME/sgx/xrk/public_key"
@@ -209,7 +209,7 @@ fi
 
 if [ -n "$xhpt" ]; then
 xhpt=$(sync_port_file "$xhpt" "xhpt")
-echo "Vless-xhttp-reality-v端口：$xhpt"
+echo "Vless-xhttp-reality port: $xhpt"
 cat >> "$HOME/sgx/xr.json" <<EOF
     {
       "tag":"xhttp-reality",
@@ -253,7 +253,7 @@ EOF
 fi
 if [ -n "$vxpt" ]; then
 vxpt=$(sync_port_file "$vxpt" "vxpt")
-echo "Vless-xhttp-enc端口：$vxpt"
+echo "Vless-xhttp-enc port: $vxpt"
 sync_cdn_domain
 cat >> "$HOME/sgx/xr.json" <<EOF
     {
@@ -288,7 +288,7 @@ EOF
 fi
 if [ -n "$vwpt" ]; then
 vwpt=$(sync_port_file "$vwpt" "vwpt")
-echo "Vless-ws-enc端口：$vwpt"
+echo "Vless-ws-enc port: $vwpt"
 sync_cdn_domain
 cat >> "$HOME/sgx/xr.json" <<EOF
     {
@@ -321,7 +321,7 @@ EOF
 fi
 if [ -n "$vlpt" ]; then
 vlpt=$(sync_port_file "$vlpt" "vlpt")
-echo "Vless-tcp-reality-v端口：$vlpt"
+echo "Vless-tcp-reality port: $vlpt"
 cat >> "$HOME/sgx/xr.json" <<EOF
         {
             "tag":"reality-vision",
@@ -362,19 +362,19 @@ fi
 
 installsb(){
 echo
-echo "=========启用Sing-box内核========="
+echo "========= Enabling Sing-box ========="
 if [ ! -e "$HOME/sgx/sing-box" ]; then
 sver=$( (command -v curl >/dev/null 2>&1 && curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p' | head -n1) || (command -v wget >/dev/null 2>&1 && wget -qO- https://api.github.com/repos/SagerNet/sing-box/releases/latest | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p' | head -n1) )
 [ -z "$sver" ] && sver="1.11.1"
 url="https://github.com/SagerNet/sing-box/releases/download/v$sver/sing-box-$sver-linux-$cpu.tar.gz"; out="$HOME/sgx/sing-box.tar.gz"
-download_asset "$url" "$out" || { echo "下载 Sing-box 失败，请稍后重试。"; exit 1; }
-tar -xzf "$out" -C "$HOME/sgx" --strip-components=1 "sing-box-$sver-linux-$cpu/sing-box" >/dev/null 2>&1 || { echo "解压 Sing-box 失败，安装终止。"; rm -f "$out"; exit 1; }
+download_asset "$url" "$out" || { echo "Failed to download Sing-box, please retry later."; exit 1; }
+tar -xzf "$out" -C "$HOME/sgx" --strip-components=1 "sing-box-$sver-linux-$cpu/sing-box" >/dev/null 2>&1 || { echo "Failed to extract Sing-box, aborting."; rm -f "$out"; exit 1; }
 rm -f "$out"
 chmod +x "$HOME/sgx/sing-box"
 fi
-binary_ok "$HOME/sgx/sing-box" version || { echo "Sing-box 内核执行失败（可能下载损坏或架构不兼容），安装终止。"; rm -f "$HOME/sgx/sing-box"; exit 1; }
+binary_ok "$HOME/sgx/sing-box" version || { echo "Sing-box binary failed (corrupted download or incompatible arch), aborting."; rm -f "$HOME/sgx/sing-box"; exit 1; }
 sbcore=$("$HOME/sgx/sing-box" version 2>/dev/null | awk '/version/{print $NF}' | head -n1)
-echo "已安装Sing-box正式版内核：$sbcore"
+echo "Sing-box installed: $sbcore"
 cat > "$HOME/sgx/sb.json" <<EOF
 {
 "log": {
@@ -400,12 +400,12 @@ openssl ecparam -genkey -name prime256v1 -out "$HOME/sgx/private.key" >/dev/null
 openssl req -new -x509 -days 36500 -key "$HOME/sgx/private.key" -out "$HOME/sgx/cert.pem" -subj "/CN=www.bing.com" >/dev/null 2>&1
 fi
 if [ ! -f "$HOME/sgx/private.key" ]; then
-echo "缺少证书文件且无法生成，请安装 openssl 后重试。" && exit 1
+echo "Missing certificate files and cannot generate them. Install openssl first." && exit 1
 fi
 fi
 if [ -n "$hypt" ]; then
 hypt=$(sync_port_file "$hypt" "hypt")
-echo "Hysteria2端口：$hypt"
+echo "Hysteria2 port: $hypt"
 cat >> "$HOME/sgx/sb.json" <<EOF
     {
         "type": "hysteria2",
@@ -431,7 +431,7 @@ EOF
 fi
 if [ -n "$tupt" ]; then
 tupt=$(sync_port_file "$tupt" "tupt")
-echo "Tuic端口：$tupt"
+echo "Tuic port: $tupt"
 cat >> "$HOME/sgx/sb.json" <<EOF
         {
             "type":"tuic",
@@ -458,7 +458,7 @@ EOF
 fi
 if [ -n "$anpt" ]; then
 anpt=$(sync_port_file "$anpt" "anpt")
-echo "Anytls端口：$anpt"
+echo "AnyTLS port: $anpt"
 cat >> "$HOME/sgx/sb.json" <<EOF
         {
             "type":"anytls",
@@ -484,7 +484,7 @@ if [ -z "$reym" ]; then
 reym=apple.com
 fi
 echo "$reym" > "$HOME/sgx/reym"
-echo "Reality域名：$reym"
+echo "Reality domain: $reym"
 mkdir -p "$HOME/sgx/sbk"
 if [ ! -e "$HOME/sgx/sbk/private_key" ]; then
 key_pair=$("$HOME/sgx/sing-box" generate reality-keypair)
@@ -499,7 +499,7 @@ private_key_s=$(cat "$HOME/sgx/sbk/private_key")
 public_key_s=$(cat "$HOME/sgx/sbk/public_key")
 short_id_s=$(cat "$HOME/sgx/sbk/short_id")
 arpt=$(sync_port_file "$arpt" "arpt")
-echo "Any-Reality端口：$arpt"
+echo "Any-Reality port: $arpt"
 cat >> "$HOME/sgx/sb.json" <<EOF
         {
             "type":"anytls",
@@ -535,7 +535,7 @@ echo "$sskey" > "$HOME/sgx/sskey"
 fi
 sspt=$(sync_port_file "$sspt" "sspt")
 sskey=$(cat "$HOME/sgx/sskey")
-echo "Shadowsocks-2022端口：$sspt"
+echo "Shadowsocks-2022 port: $sspt"
 cat >> "$HOME/sgx/sb.json" <<EOF
         {
             "type": "shadowsocks",
@@ -552,7 +552,7 @@ fi
 xrsbvm(){
 if [ -n "$vmpt" ]; then
 vmpt=$(sync_port_file "$vmpt" "vmpt")
-echo "Vmess-ws端口：$vmpt"
+echo "Vmess-ws port: $vmpt"
 sync_cdn_domain
 if [ -e "$HOME/sgx/xr.json" ]; then
 cat >> "$HOME/sgx/xr.json" <<EOF
@@ -610,7 +610,7 @@ fi
 xrsbso(){
 if [ -n "$sopt" ]; then
 sopt=$(sync_port_file "$sopt" "sopt")
-echo "Socks5端口：$sopt"
+echo "Socks5 port: $sopt"
 if [ -e "$HOME/sgx/xr.json" ]; then
 cat >> "$HOME/sgx/xr.json" <<EOF
         {
@@ -723,7 +723,7 @@ if [ -n "$name" ]; then
 sxname=$name-
 echo "$sxname" > "$HOME/sgx/name"
 echo
-echo "所有节点名称前缀：$name"
+echo "Node name prefix: $name"
 fi
 if [ -z "$hypt" ] && [ -z "$tupt" ] && [ -z "$anpt" ] && [ -z "$arpt" ] && [ -z "$sspt" ]; then
 installxray
@@ -744,17 +744,17 @@ xrsbout
 fi
 }
 singularix_status(){
-echo "=========当前内核运行状态========="
+echo "========= Kernel Status ========="
 procs=$(find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null)
 if echo "$procs" | grep -Eq 'sgx/sing-box' || pgrep -f 'sgx/sing-box' >/dev/null 2>&1; then
-echo "Sing-box：运行中"
+echo "Sing-box: running"
 else
-echo "Sing-box：未启用"
+echo "Sing-box: not running"
 fi
 if echo "$procs" | grep -Eq 'sgx/xray' || pgrep -f 'sgx/xray' >/dev/null 2>&1; then
-echo "Xray：运行中"
+echo "Xray: running"
 else
-echo "Xray：未启用"
+echo "Xray: not running"
 fi
 }
 cip(){
@@ -796,7 +796,7 @@ sxname=$(cat "$HOME/sgx/name" 2>/dev/null)
 xvvmcdnym=$(cat "$HOME/sgx/cdnym" 2>/dev/null)
 echo "*********************************************************"
 echo "*********************************************************"
-echo "SingulariX 输出节点配置如下："
+echo "SingulariX node configuration:"
 echo
 reym=$(cat "$HOME/sgx/reym" 2>/dev/null)
 if [ -e "$HOME/sgx/xray" ]; then
@@ -812,7 +812,7 @@ short_id_s=$(cat "$HOME/sgx/sbk/short_id" 2>/dev/null)
 sskey=$(cat "$HOME/sgx/sskey" 2>/dev/null)
 fi
 if grep xhttp-reality "$HOME/sgx/xr.json" >/dev/null 2>&1; then
-echo "💣【 Vless-xhttp-reality-enc 】支持ENC加密，节点信息如下："
+echo "--- [ Vless-xhttp-reality-enc ] ENC encrypted ---"
 xhpt=$(cat "$HOME/sgx/xhpt")
 vl_xh_link="vless://$uuid@$server_ip:$xhpt?encryption=$enkey&flow=xtls-rprx-vision&security=reality&sni=$reym&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=xhttp&path=$uuid-xh&mode=auto#${sxname}vl-xhttp-reality-$hostname"
 echo "$vl_xh_link" >> "$HOME/sgx/jh.txt"
@@ -820,14 +820,14 @@ echo "$vl_xh_link"
 echo
 fi
 if grep vless-xhttp "$HOME/sgx/xr.json" >/dev/null 2>&1; then
-echo "💣【 Vless-xhttp-enc 】支持ENC加密，节点信息如下："
+echo "--- [ Vless-xhttp-enc ] ENC encrypted ---"
 vl_vx_link="vless://$uuid@$server_ip:$vxpt?encryption=$enkey&flow=xtls-rprx-vision&type=xhttp&path=$uuid-vx&mode=auto#${sxname}vl-xhttp-$hostname"
 echo "$vl_vx_link" >> "$HOME/sgx/jh.txt"
 echo "$vl_vx_link"
 echo
 if [ -f "$HOME/sgx/cdnym" ]; then
-echo "💣【 Vless-xhttp-ecn-cdn 】支持ENC加密，节点信息如下："
-echo "注：请将地址替换为你的优选域名/IP；如是回源端口请手动修改对应端口"
+echo "--- [ Vless-xhttp-enc-cdn ] ENC encrypted ---"
+echo "Note: Replace address with your preferred CDN domain/IP; adjust port if using origin port"
 vl_vx_cdn_link="vless://$uuid@$xvvmcdnym:$vxpt?encryption=$enkey&flow=xtls-rprx-vision&type=xhttp&host=$xvvmcdnym&path=$uuid-vx&mode=auto#${sxname}vl-xhttp-$hostname"
 echo "$vl_vx_cdn_link" >> "$HOME/sgx/jh.txt"
 echo "$vl_vx_cdn_link"
@@ -835,15 +835,15 @@ echo
 fi
 fi
 if grep vless-ws "$HOME/sgx/xr.json" >/dev/null 2>&1; then
-echo "💣【 Vless-ws-enc 】支持ENC加密，节点信息如下："
+echo "--- [ Vless-ws-enc ] ENC encrypted ---"
 vwpt=$(cat "$HOME/sgx/vwpt")
 vl_vw_link="vless://$uuid@$server_ip:$vwpt?encryption=$enkey&flow=xtls-rprx-vision&type=ws&path=$uuid-vw#${sxname}vl-ws-enc-$hostname"
 echo "$vl_vw_link" >> "$HOME/sgx/jh.txt"
 echo "$vl_vw_link"
 echo
 if [ -f "$HOME/sgx/cdnym" ]; then
-echo "💣【 Vless-ws-enc-cdn 】支持ENC加密，节点信息如下："
-echo "注：请将地址替换为你的优选域名/IP；如是回源端口请手动修改对应端口"
+echo "--- [ Vless-ws-enc-cdn ] ENC encrypted ---"
+echo "Note: Replace address with your preferred CDN domain/IP; adjust port if using origin port"
 vl_vw_cdn_link="vless://$uuid@$xvvmcdnym:$vwpt?encryption=$enkey&flow=xtls-rprx-vision&type=ws&host=$xvvmcdnym&path=$uuid-vw#${sxname}vl-ws-enc-cdn-$hostname"
 echo "$vl_vw_cdn_link" >> "$HOME/sgx/jh.txt"
 echo "$vl_vw_cdn_link"
@@ -851,7 +851,7 @@ echo
 fi
 fi
 if grep reality-vision "$HOME/sgx/xr.json" >/dev/null 2>&1; then
-echo "💣【 Vless-tcp-reality-vision 】节点信息如下："
+echo "--- [ Vless-tcp-reality-vision ] ---"
 vlpt=$(cat "$HOME/sgx/vlpt")
 vl_link="vless://$uuid@$server_ip:$vlpt?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$reym&fp=chrome&pbk=$public_key_x&sid=$short_id_x&type=tcp&headerType=none#${sxname}vl-reality-vision-$hostname"
 echo "$vl_link" >> "$HOME/sgx/jh.txt"
@@ -859,7 +859,7 @@ echo "$vl_link"
 echo
 fi
 if grep ss-2022 "$HOME/sgx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Shadowsocks-2022 】节点信息如下："
+echo "--- [ Shadowsocks-2022 ] ---"
 sspt=$(cat "$HOME/sgx/sspt")
 ss_link="ss://$(echo -n "2022-blake3-aes-128-gcm:$sskey@$server_ip:$sspt" | base64 -w0)#${sxname}Shadowsocks-2022-$hostname"
 echo "$ss_link" >> "$HOME/sgx/jh.txt"
@@ -867,15 +867,15 @@ echo "$ss_link"
 echo
 fi
 if grep vmess-xr "$HOME/sgx/xr.json" >/dev/null 2>&1 || grep vmess-sb "$HOME/sgx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Vmess-ws 】节点信息如下："
+echo "--- [ Vmess-ws ] ---"
 vmpt=$(cat "$HOME/sgx/vmpt")
 vm_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vm-ws-$hostname\", \"add\": \"$server_ip\", \"port\": \"$vmpt\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"www.bing.com\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
 echo "$vm_link" >> "$HOME/sgx/jh.txt"
 echo "$vm_link"
 echo
 if [ -f "$HOME/sgx/cdnym" ]; then
-echo "💣【 Vmess-ws-cdn 】节点信息如下："
-echo "注：请将地址替换为你的优选域名/IP；如是回源端口请手动修改对应端口"
+echo "--- [ Vmess-ws-cdn ] ---"
+echo "Note: Replace address with your preferred CDN domain/IP; adjust port if using origin port"
 vm_cdn_link="vmess://$(echo "{ \"v\": \"2\", \"ps\": \"${sxname}vm-ws-cdn-$hostname\", \"add\": \"$xvvmcdnym\", \"port\": \"$vmpt\", \"id\": \"$uuid\", \"aid\": \"0\", \"scy\": \"auto\", \"net\": \"ws\", \"type\": \"none\", \"host\": \"$xvvmcdnym\", \"path\": \"/$uuid-vm\", \"tls\": \"\"}" | base64 -w0)"
 echo "$vm_cdn_link" >> "$HOME/sgx/jh.txt"
 echo "$vm_cdn_link"
@@ -883,7 +883,7 @@ echo
 fi
 fi
 if grep anytls-sb "$HOME/sgx/sb.json" >/dev/null 2>&1; then
-echo "💣【 AnyTLS 】节点信息如下："
+echo "--- [ AnyTLS ] ---"
 anpt=$(cat "$HOME/sgx/anpt")
 an_link="anytls://$uuid@$server_ip:$anpt?insecure=1&allowInsecure=1#${sxname}anytls-$hostname"
 echo "$an_link" >> "$HOME/sgx/jh.txt"
@@ -891,7 +891,7 @@ echo "$an_link"
 echo
 fi
 if grep anyreality-sb "$HOME/sgx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Any-Reality 】节点信息如下："
+echo "--- [ Any-Reality ] ---"
 arpt=$(cat "$HOME/sgx/arpt")
 ar_link="anytls://$uuid@$server_ip:$arpt?security=reality&sni=$reym&fp=chrome&pbk=$public_key_s&sid=$short_id_s&type=tcp&headerType=none#${sxname}any-reality-$hostname"
 echo "$ar_link" >> "$HOME/sgx/jh.txt"
@@ -899,7 +899,7 @@ echo "$ar_link"
 echo
 fi
 if grep hy2-sb "$HOME/sgx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Hysteria2 】节点信息如下："
+echo "--- [ Hysteria2 ] ---"
 hypt=$(cat "$HOME/sgx/hypt")
 hy2_link="hysteria2://$uuid@$server_ip:$hypt?insecure=1&sni=www.bing.com#${sxname}hy2-$hostname"
 echo "$hy2_link" >> "$HOME/sgx/jh.txt"
@@ -907,7 +907,7 @@ echo "$hy2_link"
 echo
 fi
 if grep tuic5-sb "$HOME/sgx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Tuic 】节点信息如下："
+echo "--- [ Tuic ] ---"
 tupt=$(cat "$HOME/sgx/tupt")
 tuic5_link="tuic://$uuid:$uuid@$server_ip:$tupt?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=www.bing.com&allow_insecure=1&allowInsecure=1#${sxname}tuic-$hostname"
 echo "$tuic5_link" >> "$HOME/sgx/jh.txt"
@@ -915,17 +915,17 @@ echo "$tuic5_link"
 echo
 fi
 if grep socks5-xr "$HOME/sgx/xr.json" >/dev/null 2>&1 || grep socks5-sb "$HOME/sgx/sb.json" >/dev/null 2>&1; then
-echo "💣【 Socks5 】客户端信息如下："
+echo "--- [ Socks5 ] client info ---"
 sopt=$(cat "$HOME/sgx/sopt")
-echo "请配合其他应用内置代理使用，勿做节点直接使用"
-echo "客户端地址：$server_ip"
-echo "客户端端口：$sopt"
-echo "客户端用户名：$uuid"
-echo "客户端密码：$uuid"
+echo "Use with apps that support proxy settings; not for direct node use"
+echo "Address: $server_ip"
+echo "Port: $sopt"
+echo "Username: $uuid"
+echo "Password: $uuid"
 echo
 fi
 echo "---------------------------------------------------------"
-echo "聚合节点信息，请进入 $HOME/sgx/jh.txt 文件目录查看或者运行 cat $HOME/sgx/jh.txt 查看"
+echo "All node links saved to $HOME/sgx/jh.txt (run: cat $HOME/sgx/jh.txt)"
 echo "========================================================="
 }
 if ! sgx_core_running; then
@@ -948,16 +948,16 @@ sbyx="prefer_ipv4"
 fi
 }
 v4orv6
-echo "SingulariX脚本未安装，开始安装..." && sleep 2
+echo "SingulariX not installed, starting installation..." && sleep 2
 ins
 if ! sgx_core_running; then
-echo "核心进程未启动，安装失败，已停止输出节点信息。"
+echo "Core process not running. Installation failed."
 exit 1
 fi
 cip
 echo
 else
-echo "SingulariX脚本已安装"
+echo "SingulariX is already installed"
 echo
 singularix_status
 exit

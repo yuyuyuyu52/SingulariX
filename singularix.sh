@@ -37,9 +37,9 @@ bootstrap_core_script() {
 }
 
 if [ ! -f "$CORE_SCRIPT" ] && ! bootstrap_core_script; then
-  echo "错误: 未找到核心脚本: $CORE_SCRIPT" >&2
-  echo "请确认仓库结构完整，或稍后重试一键安装命令。" >&2
-  echo "你也可以手动克隆仓库后运行 ./singularix.sh" >&2
+  echo "Error: core script not found: $CORE_SCRIPT" >&2
+  echo "Please verify the repository structure, or retry the one-liner install command." >&2
+  echo "You can also clone the repo manually and run ./singularix.sh" >&2
   exit 1
 fi
 
@@ -83,8 +83,8 @@ EOF
     case ":$PATH:" in
       *":$HOME/.local/bin:"*) ;;
       *)
-        echo "提示: 已安装 sgx 到 $target。"
-        echo "请先执行: export PATH=\"$HOME/.local/bin:\$PATH\""
+        echo "Hint: sgx installed to $target."
+        echo "Run first: export PATH=\"$HOME/.local/bin:\$PATH\""
         ;;
     esac
   fi
@@ -139,7 +139,7 @@ run_core() {
 
 pause_if_tty() {
   if [ -t 0 ]; then
-    printf "按回车继续..."
+    printf "Press Enter to continue..."
     read -r _
   fi
 }
@@ -153,9 +153,9 @@ run_or_warn() {
   fi
 
   code=$?
-  echo "[$action_name] 执行失败，退出码: $code"
+  echo "[$action_name] failed, exit code: $code"
   if [ "$code" -eq 127 ]; then
-    echo "提示：系统可能缺少命令依赖（建议安装 coreutils curl wget tar unzip openssl）。"
+    echo "Hint: missing dependencies (install coreutils curl wget tar unzip openssl)."
   fi
   pause_if_tty
   return "$code"
@@ -211,7 +211,7 @@ run_install_profile() {
   esac
 
   if [ "${SGX_AUTO_BBR:-1}" = "1" ]; then
-    echo "安装流程: 自动尝试开启 BBR..."
+    echo "Install: auto-enabling BBR..."
     enable_bbr || true
   fi
 
@@ -245,7 +245,7 @@ build_subscription() {
   converter_url="${SUBCONVERTER_URL:-https://api.v1.mk/sub}"
 
   if [ ! -s "$src_file" ]; then
-    echo "订阅内容未生成（jh.txt 为空）。"
+    echo "Subscription not generated (jh.txt is empty)."
     return
   fi
 
@@ -353,48 +353,48 @@ PY
         clash_url="$clash_convert_url"
       fi
 
-      echo "订阅链接(Base64): $base64_url"
-      echo "订阅链接(ShadowBox/Sing-box): $singbox_url"
-      echo "订阅链接(Clash): $clash_url"
-      echo "原始链接(URI): $raw_url"
+      echo "Subscribe (Base64): $base64_url"
+      echo "Subscribe (ShadowBox/Sing-box): $singbox_url"
+      echo "Subscribe (Clash): $clash_url"
+      echo "Raw URI: $raw_url"
     else
-      echo "订阅文件已生成: $sub_root/$sub_path/base64"
-      echo "ShadowBox/Sing-box 转换URL: $converter_url?target=singbox&new_name=true&url=<Base64链接URL编码>&insert=false&emoji=true"
-      echo "Clash 转换URL: $converter_url?target=clash&new_name=true&url=<Base64链接URL编码>&insert=false&emoji=true"
+      echo "Subscription file generated: $sub_root/$sub_path/base64"
+      echo "ShadowBox/Sing-box convert URL: $converter_url?target=singbox&new_name=true&url=<Base64-URL-encoded>&insert=false&emoji=true"
+      echo "Clash convert URL: $converter_url?target=clash&new_name=true&url=<Base64-URL-encoded>&insert=false&emoji=true"
     fi
   else
-    echo "未安装 python3，已生成订阅文件: $sub_root/$sub_path/base64"
-    echo "原始节点文件: $sub_root/$sub_path/raw"
-    echo "你可在本机安装 python3 后再次运行 list 以输出可直接访问的订阅链接。"
+    echo "python3 not found. Subscription file generated: $sub_root/$sub_path/base64"
+    echo "Raw node file: $sub_root/$sub_path/raw"
+    echo "Install python3 and run 'list' again to output accessible subscription URLs."
   fi
 }
 
 show_list() {
   safe_clear
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  echo "SingulariX - 节点与状态"
+  echo "SingulariX - Nodes & Status"
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
   if [ -f "$HOME/sgx/jh.txt" ]; then
     cat "$HOME/sgx/jh.txt"
   else
-    echo "尚未生成节点列表（jh.txt 不存在）。"
+    echo "No node list generated (jh.txt not found)."
   fi
   echo
   build_subscription
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
   if [ -t 0 ] && [ "${SGX_NO_PAUSE:-}" != "1" ]; then
-    printf "按回车返回菜单..."
+    printf "Press Enter to return to menu..."
     read -r _
   fi
 }
 
 restart_services() {
   if ! is_installed; then
-    echo "未检测到安装目录，无法重启。"
+    echo "Install directory not found, cannot restart."
     sleep 1
     return
   fi
-  echo "正在重启脚本托管的内核进程..."
+  echo "Restarting kernel processes..."
   stop_managed_processes
   load_existing_env
   run_core
@@ -406,33 +406,33 @@ upgrade_xray() {
     amd64) xarch="64" ;;
     arm64) xarch="arm64-v8a" ;;
     *)
-      echo "当前架构不支持自动升级 Xray。"
+      echo "Current architecture does not support auto-upgrade for Xray."
       return
       ;;
   esac
 
   if ! command -v unzip >/dev/null 2>&1; then
-    echo "缺少 unzip，无法解压 Xray。请先安装 unzip。"
+    echo "Missing unzip, cannot extract Xray. Please install unzip first."
     return
   fi
 
   url="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$xarch.zip"
   out="$HOME/sgx/xray.zip"
-  echo "正在升级 Xray..."
+  echo "Upgrading Xray..."
   if ! download_file "$url" "$out"; then
-    echo "下载 Xray 失败：请检查网络或 curl/wget 是否可用。"
+    echo "Failed to download Xray. Check network or curl/wget availability."
     return
   fi
   unzip -o "$out" xray -d "$HOME/sgx" >/dev/null 2>&1
   chmod +x "$HOME/sgx/xray"
   rm -f "$out"
-  echo "Xray 升级完成。"
+  echo "Xray upgrade complete."
 }
 
 upgrade_singbox() {
   arch="$(detect_arch)"
   if [ "$arch" = "unsupported" ]; then
-    echo "当前架构不支持自动升级 Sing-box。"
+    echo "Current architecture does not support auto-upgrade for Sing-box."
     return
   fi
 
@@ -441,73 +441,73 @@ upgrade_singbox() {
 
   url="https://github.com/SagerNet/sing-box/releases/download/v$sver/sing-box-$sver-linux-$arch.tar.gz"
   out="$HOME/sgx/sing-box.tar.gz"
-  echo "正在升级 Sing-box..."
+  echo "Upgrading Sing-box..."
   if ! download_file "$url" "$out"; then
-    echo "下载 Sing-box 失败：请检查网络或 curl/wget 是否可用。"
+    echo "Failed to download Sing-box. Check network or curl/wget availability."
     return
   fi
   tar -xzf "$out" -C "$HOME/sgx" --strip-components=1 "sing-box-$sver-linux-$arch/sing-box"
   chmod +x "$HOME/sgx/sing-box"
   rm -f "$out"
-  echo "Sing-box 升级完成。"
+  echo "Sing-box upgrade complete."
 }
 
 upgrade_cores() {
   if ! is_installed; then
-    echo "未检测到安装目录，无法升级。"
+    echo "Install directory not found, cannot upgrade."
     sleep 1
     return
   fi
 
   safe_clear
-  echo "1) 升级 Xray"
-  echo "2) 升级 Sing-box"
-  echo "3) 全部升级"
-  printf "请选择 [1-3]: "
+  echo "1) Upgrade Xray"
+  echo "2) Upgrade Sing-box"
+  echo "3) Upgrade all"
+  printf "Select [1-3]: "
   read -r up_choice
   case "$up_choice" in
     1) upgrade_xray ;;
     2) upgrade_singbox ;;
     3) upgrade_xray; upgrade_singbox ;;
-    *) echo "无效选择" ;;
+    *) echo "Invalid choice" ;;
   esac
-  printf "按回车返回菜单..."
+  printf "Press Enter to return to menu..."
   read -r _
 }
 
 uninstall_all() {
   if ! is_installed; then
-    echo "未检测到安装目录，无需卸载。"
+    echo "Install directory not found, nothing to uninstall."
     sleep 1
     return
   fi
-  printf "确认彻底卸载（删除 $HOME/sgx）？[y/N]: "
+  printf "Confirm full uninstall (delete $HOME/sgx)? [y/N]: "
   read -r answer
   case "$answer" in
     y|Y)
       stop_managed_processes
       rm -rf "$HOME/sgx"
       rm -f /usr/local/bin/sgx "$HOME/.local/bin/sgx" 2>/dev/null || true
-      echo "已卸载完成。"
+      echo "Uninstall complete."
       ;;
     *)
-      echo "已取消卸载。"
+      echo "Uninstall cancelled."
       ;;
   esac
   sleep 1
 }
 
 enable_bbr() {
-  echo "正在检测并开启 BBR..."
+  echo "Checking and enabling BBR..."
   if sysctl net.ipv4.tcp_congestion_control 2>/dev/null | grep -q bbr; then
-    echo "BBR 已开启。"
+    echo "BBR is already enabled."
     sleep 1
     return
   fi
 
   if [ "$(id -u)" -ne 0 ]; then
-    echo "当前非 root，无法写入 /etc/sysctl.conf。"
-    echo "请使用 sudo 运行脚本后再执行此项。"
+    echo "Not running as root, cannot write to /etc/sysctl.conf."
+    echo "Please run the script with sudo."
     sleep 2
     return
   fi
@@ -517,18 +517,18 @@ enable_bbr() {
   sysctl -p >/dev/null 2>&1 || true
 
   if sysctl net.ipv4.tcp_congestion_control 2>/dev/null | grep -q bbr; then
-    echo "BBR 开启成功。"
+    echo "BBR enabled successfully."
   else
-    echo "BBR 开启失败，请检查内核版本是否 >= 4.9。"
+    echo "Failed to enable BBR. Kernel version >= 4.9 required."
   fi
   sleep 2
 }
 
 check_ip_purity() {
-  echo "正在检测服务器 IP 纯净度与流媒体解锁..."
+  echo "Checking IP purity and streaming unlock..."
 
   if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
-    echo "未找到 curl/wget，无法执行检测。"
+    echo "curl/wget not found, cannot run check."
     pause_if_tty
     return
   fi
@@ -560,7 +560,7 @@ check_ip_purity() {
   done
 
   if [ "$fetched" -ne 1 ]; then
-    echo "检测脚本下载失败（上游地址不可用），请稍后重试。"
+    echo "Failed to download check script (upstream unavailable). Try again later."
     rm -f "$tmp_script" >/dev/null 2>&1 || true
     pause_if_tty
     return
@@ -568,9 +568,9 @@ check_ip_purity() {
 
   chmod +x "$tmp_script" >/dev/null 2>&1 || true
   if command -v bash >/dev/null 2>&1; then
-    bash "$tmp_script" || echo "检测脚本执行失败，请稍后重试。"
+    bash "$tmp_script" || echo "Check script failed. Try again later."
   else
-    sh "$tmp_script" || echo "检测脚本执行失败，请稍后重试。"
+    sh "$tmp_script" || echo "Check script failed. Try again later."
   fi
   rm -f "$tmp_script" >/dev/null 2>&1 || true
   pause_if_tty
@@ -581,23 +581,23 @@ if [ "$#" -gt 0 ]; then
   export SGX_NO_PAUSE=1
   case "$1" in
     list)
-      run_or_warn "查看节点与状态" show_list
+      run_or_warn "Show nodes & status" show_list
       exit $?
       ;;
     res)
-      run_or_warn "重启服务" restart_services
+      run_or_warn "Restart services" restart_services
       exit $?
       ;;
     upx)
-      run_or_warn "升级 Xray" upgrade_xray
+      run_or_warn "Upgrade Xray" upgrade_xray
       exit $?
       ;;
     ups)
-      run_or_warn "升级 Sing-box" upgrade_singbox
+      run_or_warn "Upgrade Sing-box" upgrade_singbox
       exit $?
       ;;
     del)
-      run_or_warn "彻底卸载" uninstall_all
+      run_or_warn "Uninstall" uninstall_all
       exit $?
       ;;
     *)
@@ -613,44 +613,44 @@ fi
 print_menu() {
   safe_clear
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  echo "SingulariX 交互菜单"
+  echo "SingulariX Menu"
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  echo " [1] 安装 VLESS-Reality (TCP)"
-  echo " [2] 安装 Hysteria2"
-  echo " [3] 安装 TUIC"
-  echo " [4] 安装 Shadowsocks-2022"
-  echo " [5] 安装 VLESS-WS"
-  echo " [6] 安装 VMess-WS"
-  echo " [7] 安装 SOCKS5"
+  echo " [1] Install VLESS-Reality (TCP)"
+  echo " [2] Install Hysteria2"
+  echo " [3] Install TUIC"
+  echo " [4] Install Shadowsocks-2022"
+  echo " [5] Install VLESS-WS"
+  echo " [6] Install VMess-WS"
+  echo " [7] Install SOCKS5"
   echo "-----------------------------------------------------------"
-  echo " [12] 开启 BBR"
-  echo " [13] 检测 IP 纯净度"
+  echo " [12] Enable BBR"
+  echo " [13] Check IP purity"
   echo "-----------------------------------------------------------"
   if is_installed; then
-    echo " [8] 查看节点与状态"
-    echo " [9] 重启服务"
-    echo " [10] 更新内核 (Xray/Sing-box)"
-    echo " [11] 彻底卸载"
+    echo " [8] Show nodes & status"
+    echo " [9] Restart services"
+    echo " [10] Upgrade kernel (Xray/Sing-box)"
+    echo " [11] Full uninstall"
   else
-    echo " [8] 查看节点与状态（未安装）"
-    echo " [9] 重启服务（未安装）"
-    echo " [10] 更新内核（未安装）"
-    echo " [11] 彻底卸载（未安装）"
+    echo " [8] Show nodes & status (not installed)"
+    echo " [9] Restart services (not installed)"
+    echo " [10] Upgrade kernel (not installed)"
+    echo " [11] Full uninstall (not installed)"
   fi
-  echo " [0] 退出"
+  echo " [0] Exit"
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 }
 
 ensure_reinstall_if_running() {
   if pgrep -f "$HOME/sgx/xray|$HOME/sgx/sing-box" >/dev/null 2>&1; then
-    printf "检测到已有实例运行，是否停止并按新配置重装？[y/N]: "
+    printf "Running instance detected. Stop and reinstall with new config? [y/N]: "
     read -r answer
     case "$answer" in
       y|Y)
         stop_managed_processes
         ;;
       *)
-        echo "已取消重装，改为仅查看当前状态。"
+        echo "Reinstall cancelled. Showing current status instead."
         run_core
         exit 0
         ;;
@@ -660,82 +660,82 @@ ensure_reinstall_if_running() {
 
 while true; do
   print_menu
-  printf "请选择 [0-13]: "
+  printf "Select [0-13]: "
   read -r choice
 
   case "$choice" in
     1)
       ensure_reinstall_if_running
-      if run_or_warn "安装 Reality" run_install_profile reality; then
+      if run_or_warn "Install Reality" run_install_profile reality; then
         exit 0
       fi
       ;;
     2)
       ensure_reinstall_if_running
-      if run_or_warn "安装 Hy2" run_install_profile hy2; then
+      if run_or_warn "Install Hy2" run_install_profile hy2; then
         exit 0
       fi
       ;;
     3)
       ensure_reinstall_if_running
-      if run_or_warn "安装 TUIC" run_install_profile tuic; then
+      if run_or_warn "Install TUIC" run_install_profile tuic; then
         exit 0
       fi
       ;;
     4)
       ensure_reinstall_if_running
-      if run_or_warn "安装 Shadowsocks-2022" run_install_profile ss2022; then
+      if run_or_warn "Install Shadowsocks-2022" run_install_profile ss2022; then
         exit 0
       fi
       ;;
     5)
       ensure_reinstall_if_running
-      if run_or_warn "安装 VLESS-WS" run_install_profile vlessws; then
+      if run_or_warn "Install VLESS-WS" run_install_profile vlessws; then
         exit 0
       fi
       ;;
     6)
       ensure_reinstall_if_running
-      if run_or_warn "安装 VMess-WS" run_install_profile vmessws; then
+      if run_or_warn "Install VMess-WS" run_install_profile vmessws; then
         exit 0
       fi
       ;;
     7)
       ensure_reinstall_if_running
-      if run_or_warn "安装 SOCKS5" run_install_profile socks5; then
+      if run_or_warn "Install SOCKS5" run_install_profile socks5; then
         exit 0
       fi
       ;;
     8)
       if is_installed; then
-        run_or_warn "查看节点与状态" show_list || true
+        run_or_warn "Show nodes & status" show_list || true
       else
-        echo "尚未安装，暂无可展示节点。"
+        echo "Not installed yet. No nodes to show."
         sleep 1
       fi
       ;;
     9)
-      if run_or_warn "重启服务" restart_services; then
+      if run_or_warn "Restart services" restart_services; then
         exit 0
       fi
       ;;
     10)
-      run_or_warn "更新内核" upgrade_cores || true
+      run_or_warn "Upgrade kernel" upgrade_cores || true
       ;;
     11)
-      run_or_warn "彻底卸载" uninstall_all || true
+      run_or_warn "Uninstall" uninstall_all || true
       ;;
     12)
-      run_or_warn "开启 BBR" enable_bbr || true
+      run_or_warn "Enable BBR" enable_bbr || true
       ;;
     13)
-      run_or_warn "检测 IP 纯净度" check_ip_purity || true
+      run_or_warn "Check IP purity" check_ip_purity || true
       ;;
     0)
       exit 0
       ;;
     *)
-      echo "无效输入，请重试。"
+      echo "Invalid input, please try again."
       sleep 1
       ;;
   esac

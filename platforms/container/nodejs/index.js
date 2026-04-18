@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 const uuid = process.env.uuid || randomUUID();
 const DOMAIN = process.env.DOMAIN || 'YOUR.DOMAIN';
 const vlessInfo = `vless://${uuid}@${DOMAIN}:443?encryption=none&security=tls&sni=${DOMAIN}&fp=chrome&type=ws&host=${DOMAIN}&path=%2F#Vl-ws-tls-${NAME}`;
-console.log(`vless-ws-tls节点分享: ${vlessInfo}`);
+console.log(`vless-ws-tls node info: ${vlessInfo}`);
 
 fs.chmod(START_SCRIPT, 0o755, (err) => {
     if (err) {
@@ -34,7 +34,7 @@ fs.chmod(START_SCRIPT, 0o755, (err) => {
 const server = http.createServer((req, res) => {
     if (req.url === '/') {
         res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('🟢恭喜！SingulariX小钢炮脚本-nodejs版部署成功！\n\n查看节点信息路径：/你的uuid');
+        res.end('SingulariX (Node.js) deployed successfully!\n\nView node info at: /<your-uuid>');
         return;
     }
 

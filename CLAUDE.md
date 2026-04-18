@@ -38,6 +38,6 @@ Other: `uuid`, `reym` (Reality domain), `cdnym` (CDN domain), `ippz` (IP version
 
 ## Conventions
 
-- User-facing strings are in Chinese (中文).
+- Terminal output strings are in English. README is in Chinese (中文).
 - Shell scripts target POSIX sh (`#!/bin/sh`), not bash.
 - No external dependencies beyond coreutils, curl/wget, tar, unzip, openssl.
