@@ -435,13 +435,6 @@
             <option value="6">导出 IPv6</option>
           </select>
         </div>
-        <div class="row">
-          <label>当前系统开放所有端口 <span class="pill">oap</span></label>
-          <select id="oap">
-            <option value="">默认 关闭</option>
-            <option value="y">开启 执行一次即可关闭</option>
-          </select>
-        </div>
         <div class="row"><label>导出节点名称前缀 <span class="pill">name</span></label><input id="name" type="text" placeholder="留空则默认协议名前缀"/></div>
       </section>
 
@@ -485,7 +478,7 @@
   const CURL = 'bash <(curl -Ls https://raw.githubusercontent.com/YOUR_GITHUB_USER/SingulariX/main/singularix.sh)';
   const WGET = 'bash <(wget -qO- https://raw.githubusercontent.com/YOUR_GITHUB_USER/SingulariX/main/singularix.sh)';
   const protoKeys = ['sopt','vmpt','vlpt','xhpt','vxpt','vwpt','arpt','anpt','hypt','tupt','sspt'];
-  const optIds = ['ippz','uuid','reym','cdnym','name', 'oap'];
+  const optIds = ['ippz','uuid','reym','cdnym','name'];
 
   const vmessWsCheckbox = document.querySelector('[data-proto="vmpt"]');
   const vlessWsVCheckbox = document.querySelector('[data-proto="vwpt"]');
@@ -496,7 +489,6 @@
   const checkboxes = document.querySelectorAll('input[type="checkbox"]');
   const textInputs = document.querySelectorAll('input[type="text"]');
   const ippzSelect = document.getElementById('ippz');
-  const oapSelect = document.getElementById('oap');
   const generateUuidBtn = document.getElementById('generateUuidBtn');
   const uuidInput = document.getElementById('uuid');
   const themeSwitchCheckbox = document.getElementById('theme-switch-checkbox');
@@ -528,7 +520,6 @@
     if (!preserveIppz) {
         ippzSelect.value = '';
     }
-    oapSelect.value = '';
     document.getElementById('uuid').value = '';
     document.getElementById('reym').value = '';
     document.getElementById('name').value = '';
@@ -630,7 +621,6 @@
     const ordered = [];
     protoKeys.forEach(k => { if (keys.includes(k)) ordered.push(k); });
     ['uuid', 'reym', 'cdnym', 'name', 'ippz'].forEach(k => { if (keys.includes(k)) ordered.push(k); });
-    if (keys.includes('oap')) ordered.push('oap');
     keys.forEach(k => { if (!ordered.includes(k)) ordered.push(k); });
 
     return ordered.map(k => {

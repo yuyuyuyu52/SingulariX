@@ -22,8 +22,6 @@ echo "SingulariX 一键部署脚本"
 echo "当前版本：V26.04.19"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 hostname=$(uname -a | awk '{print $2}')
-op=$(cat /etc/redhat-release 2>/dev/null || cat /etc/os-release 2>/dev/null | grep -i pretty_name | cut -d \" -f2)
-[ -z "$(systemd-detect-virt 2>/dev/null)" ] && vi=$(virt-what 2>/dev/null) || vi=$(systemd-detect-virt 2>/dev/null)
 case $(uname -m) in
 aarch64) cpu=arm64;;
 x86_64) cpu=amd64;;
@@ -65,8 +63,6 @@ done
 v4v6(){
 v4=$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 --tries=2 -qO- "$v46url" 2>/dev/null) )
 v6=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 --tries=2 -qO- "$v46url" 2>/dev/null) )
-v4dq=$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k https://ip.fm | sed -E 's/.*Location: ([^,]+(, [^,]+)*),.*/\1/' 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 --tries=2 -qO- https://ip.fm | grep '<span class="has-text-grey-light">Location:' | tail -n1 | sed -E 's/.*>Location: <\/span>([^<]+)<.*/\1/' 2>/dev/null) )
-v6dq=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k https://ip.fm | sed -E 's/.*Location: ([^,]+(, [^,]+)*),.*/\1/' 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 --tries=2 -qO- https://ip.fm | grep '<span class="has-text-grey-light">Location:' | tail -n1 | sed -E 's/.*>Location: <\/span>([^<]+)<.*/\1/' 2>/dev/null) )
 }
 sync_port_file(){
 port_value="$1"
@@ -774,20 +770,6 @@ fi
 }
 ipchange(){
 v4v6
-if [ -z "$v4" ]; then
-vps_ipv4='无IPV4'
-vps_ipv6="$v6"
-location="$v6dq"
-elif [ -n "$v4" ] && [ -n "$v6" ]; then
-vps_ipv4="$v4"
-vps_ipv6="$v6"
-location="$v4dq"
-else
-vps_ipv4="$v4"
-vps_ipv6='无IPV6'
-location="$v4dq"
-fi
-sleep 1
 if [ "$ippz" = "4" ]; then
 if [ -z "$v4" ]; then
 ipbest
@@ -817,7 +799,6 @@ echo "*********************************************************"
 echo "SingulariX 输出节点配置如下："
 echo
 reym=$(cat "$HOME/sgx/reym" 2>/dev/null)
-cfip() { echo $((RANDOM % 13 + 1)); }
 if [ -e "$HOME/sgx/xray" ]; then
 private_key_x=$(cat "$HOME/sgx/xrk/private_key" 2>/dev/null)
 public_key_x=$(cat "$HOME/sgx/xrk/public_key" 2>/dev/null)
