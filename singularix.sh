@@ -24,13 +24,12 @@ bootstrap_core_script() {
 
   raw_base_url="${SGX_RAW_BASE_URL:-https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main}"
   core_url="${SGX_CORE_URL:-$raw_base_url/platforms/container/nodejs/start.sh}"
-  bootstrap_root="${TMPDIR:-/tmp}/singularix-bootstrap-$$"
-  bootstrap_core="$bootstrap_root/platforms/container/nodejs/start.sh"
+  persistent_core="$HOME/sgx/platforms/container/nodejs/start.sh"
 
-  mkdir -p "$bootstrap_root/platforms/container/nodejs" 2>/dev/null || return 1
-  if download_bootstrap_file "$core_url" "$bootstrap_core" && [ -s "$bootstrap_core" ]; then
-    chmod +x "$bootstrap_core" 2>/dev/null || true
-    CORE_SCRIPT="$bootstrap_core"
+  mkdir -p "$HOME/sgx/platforms/container/nodejs" 2>/dev/null || return 1
+  if download_bootstrap_file "$core_url" "$persistent_core" && [ -s "$persistent_core" ]; then
+    chmod +x "$persistent_core" 2>/dev/null || true
+    CORE_SCRIPT="$persistent_core"
     return 0
   fi
   return 1
@@ -53,11 +52,9 @@ install_sgx_shortcut() {
   if [ ! -f "$launcher" ]; then
     mkdir -p "$HOME/sgx" 2>/dev/null || return 0
     launcher="$HOME/sgx/singularix.sh"
-    if [ ! -f "$launcher" ]; then
-      raw_base_url="${SGX_RAW_BASE_URL:-https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main}"
-      download_bootstrap_file "$raw_base_url/singularix.sh" "$launcher" || return 0
-      chmod +x "$launcher" 2>/dev/null || true
-    fi
+    raw_base_url="${SGX_RAW_BASE_URL:-https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main}"
+    download_bootstrap_file "$raw_base_url/singularix.sh" "$launcher" || return 0
+    chmod +x "$launcher" 2>/dev/null || true
   fi
 
   if [ "$(id -u)" -eq 0 ]; then
