@@ -48,6 +48,36 @@ v6=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) |
 v4dq=$( (command -v curl >/dev/null 2>&1 && curl -s4m5 -k https://ip.fm | sed -E 's/.*Location: ([^,]+(, [^,]+)*),.*/\1/' 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -4 --tries=2 -qO- https://ip.fm | grep '<span class="has-text-grey-light">Location:' | tail -n1 | sed -E 's/.*>Location: <\/span>([^<]+)<.*/\1/' 2>/dev/null) )
 v6dq=$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k https://ip.fm | sed -E 's/.*Location: ([^,]+(, [^,]+)*),.*/\1/' 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 --tries=2 -qO- https://ip.fm | grep '<span class="has-text-grey-light">Location:' | tail -n1 | sed -E 's/.*>Location: <\/span>([^<]+)<.*/\1/' 2>/dev/null) )
 }
+sync_port_file(){
+port_value="$1"
+port_key="$2"
+port_file="$HOME/agsbx/$port_key"
+
+if [ -z "$port_value" ] && [ ! -e "$port_file" ]; then
+port_value=$(shuf -i 10000-65535 -n 1)
+echo "$port_value" > "$port_file"
+elif [ -n "$port_value" ]; then
+echo "$port_value" > "$port_file"
+fi
+
+if [ -e "$port_file" ]; then
+cat "$port_file"
+else
+echo "$port_value"
+fi
+}
+sync_cdn_domain(){
+if [ -n "$cdnym" ]; then
+echo "$cdnym" > "$HOME/agsbx/cdnym"
+echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
+fi
+}
+agsbx_core_running(){
+if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)'; then
+return 0
+fi
+pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1
+}
 warpsx(){
 warpurl=$( (command -v curl >/dev/null 2>&1 && curl -sm5 -k https://ygkkk-warp.renky.eu.org 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget --tries=2 -qO- https://ygkkk-warp.renky.eu.org 2>/dev/null) )
 if echo "$warpurl" | grep -q ygkkk; then
@@ -185,13 +215,7 @@ enkey=$(cat "$HOME/agsbx/xrk/enkey")
 fi
 
 if [ -n "$xhpt" ]; then
-if [ -z "$xhpt" ] && [ ! -e "$HOME/agsbx/xhpt" ]; then
-xhpt=$(shuf -i 10000-65535 -n 1)
-echo "$xhpt" > "$HOME/agsbx/xhpt"
-elif [ -n "$xhpt" ]; then
-echo "$xhpt" > "$HOME/agsbx/xhpt"
-fi
-xhpt=$(cat "$HOME/agsbx/xhpt")
+xhpt=$(sync_port_file "$xhpt" "xhpt")
 echo "Vless-xhttp-reality-v端口：$xhpt"
 cat >> "$HOME/agsbx/xr.json" <<EOF
     {
@@ -235,18 +259,9 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
 EOF
 fi
 if [ -n "$vxpt" ]; then
-if [ -z "$vxpt" ] && [ ! -e "$HOME/agsbx/vxpt" ]; then
-vxpt=$(shuf -i 10000-65535 -n 1)
-echo "$vxpt" > "$HOME/agsbx/vxpt"
-elif [ -n "$vxpt" ]; then
-echo "$vxpt" > "$HOME/agsbx/vxpt"
-fi
-vxpt=$(cat "$HOME/agsbx/vxpt")
+vxpt=$(sync_port_file "$vxpt" "vxpt")
 echo "Vless-xhttp-enc端口：$vxpt"
-if [ -n "$cdnym" ]; then
-echo "$cdnym" > "$HOME/agsbx/cdnym"
-echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
-fi
+sync_cdn_domain
 cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"vless-xhttp",
@@ -279,18 +294,9 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
 EOF
 fi
 if [ -n "$vwpt" ]; then
-if [ -z "$vwpt" ] && [ ! -e "$HOME/agsbx/vwpt" ]; then
-vwpt=$(shuf -i 10000-65535 -n 1)
-echo "$vwpt" > "$HOME/agsbx/vwpt"
-elif [ -n "$vwpt" ]; then
-echo "$vwpt" > "$HOME/agsbx/vwpt"
-fi
-vwpt=$(cat "$HOME/agsbx/vwpt")
+vwpt=$(sync_port_file "$vwpt" "vwpt")
 echo "Vless-ws-enc端口：$vwpt"
-if [ -n "$cdnym" ]; then
-echo "$cdnym" > "$HOME/agsbx/cdnym"
-echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
-fi
+sync_cdn_domain
 cat >> "$HOME/agsbx/xr.json" <<EOF
     {
       "tag":"vless-ws",
@@ -321,13 +327,7 @@ cat >> "$HOME/agsbx/xr.json" <<EOF
 EOF
 fi
 if [ -n "$vlpt" ]; then
-if [ -z "$vlpt" ] && [ ! -e "$HOME/agsbx/vlpt" ]; then
-vlpt=$(shuf -i 10000-65535 -n 1)
-echo "$vlpt" > "$HOME/agsbx/vlpt"
-elif [ -n "$vlpt" ]; then
-echo "$vlpt" > "$HOME/agsbx/vlpt"
-fi
-vlpt=$(cat "$HOME/agsbx/vlpt")
+vlpt=$(sync_port_file "$vlpt" "vlpt")
 echo "Vless-tcp-reality-v端口：$vlpt"
 cat >> "$HOME/agsbx/xr.json" <<EOF
         {
@@ -393,13 +393,7 @@ url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/private.key"
 url="https://github.com/yonggekkk/argosbx/releases/download/argosbx/cert.pem"; out="$HOME/agsbx/cert.pem"; (command -v curl>/dev/null 2>&1 && curl -Ls -o "$out" --retry 2 "$url") || (command -v wget>/dev/null 2>&1 && timeout 3 wget -q -O "$out" --tries=2 "$url")
 fi
 if [ -n "$hypt" ]; then
-if [ -z "$hypt" ] && [ ! -e "$HOME/agsbx/hypt" ]; then
-hypt=$(shuf -i 10000-65535 -n 1)
-echo "$hypt" > "$HOME/agsbx/hypt"
-elif [ -n "$hypt" ]; then
-echo "$hypt" > "$HOME/agsbx/hypt"
-fi
-hypt=$(cat "$HOME/agsbx/hypt")
+hypt=$(sync_port_file "$hypt" "hypt")
 echo "Hysteria2端口：$hypt"
 cat >> "$HOME/agsbx/sb.json" <<EOF
     {
@@ -425,13 +419,7 @@ cat >> "$HOME/agsbx/sb.json" <<EOF
 EOF
 fi
 if [ -n "$tupt" ]; then
-if [ -z "$tupt" ] && [ ! -e "$HOME/agsbx/tupt" ]; then
-tupt=$(shuf -i 10000-65535 -n 1)
-echo "$tupt" > "$HOME/agsbx/tupt"
-elif [ -n "$tupt" ]; then
-echo "$tupt" > "$HOME/agsbx/tupt"
-fi
-tupt=$(cat "$HOME/agsbx/tupt")
+tupt=$(sync_port_file "$tupt" "tupt")
 echo "Tuic端口：$tupt"
 cat >> "$HOME/agsbx/sb.json" <<EOF
         {
@@ -458,13 +446,7 @@ cat >> "$HOME/agsbx/sb.json" <<EOF
 EOF
 fi
 if [ -n "$anpt" ]; then
-if [ -z "$anpt" ] && [ ! -e "$HOME/agsbx/anpt" ]; then
-anpt=$(shuf -i 10000-65535 -n 1)
-echo "$anpt" > "$HOME/agsbx/anpt"
-elif [ -n "$anpt" ]; then
-echo "$anpt" > "$HOME/agsbx/anpt"
-fi
-anpt=$(cat "$HOME/agsbx/anpt")
+anpt=$(sync_port_file "$anpt" "anpt")
 echo "Anytls端口：$anpt"
 cat >> "$HOME/agsbx/sb.json" <<EOF
         {
@@ -505,13 +487,7 @@ fi
 private_key_s=$(cat "$HOME/agsbx/sbk/private_key")
 public_key_s=$(cat "$HOME/agsbx/sbk/public_key")
 short_id_s=$(cat "$HOME/agsbx/sbk/short_id")
-if [ -z "$arpt" ] && [ ! -e "$HOME/agsbx/arpt" ]; then
-arpt=$(shuf -i 10000-65535 -n 1)
-echo "$arpt" > "$HOME/agsbx/arpt"
-elif [ -n "$arpt" ]; then
-echo "$arpt" > "$HOME/agsbx/arpt"
-fi
-arpt=$(cat "$HOME/agsbx/arpt")
+arpt=$(sync_port_file "$arpt" "arpt")
 echo "Any-Reality端口：$arpt"
 cat >> "$HOME/agsbx/sb.json" <<EOF
         {
@@ -546,14 +522,8 @@ if [ ! -e "$HOME/agsbx/sskey" ]; then
 sskey=$("$HOME/agsbx/sing-box" generate rand 16 --base64)
 echo "$sskey" > "$HOME/agsbx/sskey"
 fi
-if [ -z "$sspt" ] && [ ! -e "$HOME/agsbx/sspt" ]; then
-sspt=$(shuf -i 10000-65535 -n 1)
-echo "$sspt" > "$HOME/agsbx/sspt"
-elif [ -n "$sspt" ]; then
-echo "$sspt" > "$HOME/agsbx/sspt"
-fi
+sspt=$(sync_port_file "$sspt" "sspt")
 sskey=$(cat "$HOME/agsbx/sskey")
-sspt=$(cat "$HOME/agsbx/sspt")
 echo "Shadowsocks-2022端口：$sspt"
 cat >> "$HOME/agsbx/sb.json" <<EOF
         {
@@ -570,18 +540,9 @@ fi
 
 xrsbvm(){
 if [ -n "$vmpt" ]; then
-if [ -z "$vmpt" ] && [ ! -e "$HOME/agsbx/vmpt" ]; then
-vmpt=$(shuf -i 10000-65535 -n 1)
-echo "$vmpt" > "$HOME/agsbx/vmpt"
-elif [ -n "$vmpt" ]; then
-echo "$vmpt" > "$HOME/agsbx/vmpt"
-fi
-vmpt=$(cat "$HOME/agsbx/vmpt")
+vmpt=$(sync_port_file "$vmpt" "vmpt")
 echo "Vmess-ws端口：$vmpt"
-if [ -n "$cdnym" ]; then
-echo "$cdnym" > "$HOME/agsbx/cdnym"
-echo "80系CDN或者回源CDN的host域名 (确保IP已解析在CF域名)：$cdnym"
-fi
+sync_cdn_domain
 if [ -e "$HOME/agsbx/xr.json" ]; then
 cat >> "$HOME/agsbx/xr.json" <<EOF
         {
@@ -637,13 +598,7 @@ fi
 
 xrsbso(){
 if [ -n "$sopt" ]; then
-if [ -z "$sopt" ] && [ ! -e "$HOME/agsbx/sopt" ]; then
-sopt=$(shuf -i 10000-65535 -n 1)
-echo "$sopt" > "$HOME/agsbx/sopt"
-elif [ -n "$sopt" ]; then
-echo "$sopt" > "$HOME/agsbx/sopt"
-fi
-sopt=$(cat "$HOME/agsbx/sopt")
+sopt=$(sync_port_file "$sopt" "sopt")
 echo "Socks5端口：$sopt"
 if [ -e "$HOME/agsbx/xr.json" ]; then
 cat >> "$HOME/agsbx/xr.json" <<EOF
@@ -870,7 +825,7 @@ else
 echo "Argo$argoname隧道申请失败，请稍后再试"
 fi
 sleep 5
-if find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' || pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1 ; then
+if agsbx_core_running; then
 echo "Argosbx脚本进程启动成功，安装完毕" && sleep 2
 else
 echo "Argosbx脚本进程未启动，安装失败" && exit
@@ -993,7 +948,7 @@ echo
 fi
 if grep vless-xhttp "$HOME/agsbx/xr.json" >/dev/null 2>&1; then
 echo "💣【 Vless-xhttp-enc 】支持ENC加密，节点信息如下："
-vxpt=$(cat "$HOME/agsbx/vxpt")
+procs=$(find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null)
 vl_vx_link="vless://$uuid@$server_ip:$vxpt?encryption=$enkey&flow=xtls-rprx-vision&type=xhttp&path=$uuid-vx&mode=auto#${sxname}vl-xhttp-$hostname"
 echo "$vl_vx_link" >> "$HOME/agsbx/jh.txt"
 echo "$vl_vx_link"
@@ -1160,7 +1115,7 @@ echo "========================================================="
 echo "相关快捷方式如下：(首次安装成功后需重连SSH，agsbx快捷方式才可生效)"
 showmode
 }
-if ! find /proc/*/exe -type l 2>/dev/null | grep -E '/proc/[0-9]+/exe' | xargs -r readlink 2>/dev/null | grep -Eq 'agsbx/(s|x)' && ! pgrep -f 'agsbx/(s|x)' >/dev/null 2>&1; then
+if ! agsbx_core_running; then
 for P in /proc/[0-9]*; do if [ -L "$P/exe" ]; then TARGET=$(readlink -f "$P/exe" 2>/dev/null); if echo "$TARGET" | grep -qE '/agsbx/c|/agsbx/s|/agsbx/x'; then PID=$(basename "$P"); kill "$PID" 2>/dev/null && echo "Killed $PID ($TARGET)" || echo "Could not kill $PID ($TARGET)"; fi; fi; done
 kill -15 $(pgrep -f 'agsbx/s' 2>/dev/null) $(pgrep -f 'agsbx/c' 2>/dev/null) $(pgrep -f 'agsbx/x' 2>/dev/null) >/dev/null 2>&1
 v4orv6(){
