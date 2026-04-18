@@ -10,6 +10,12 @@ bash <(curl -fsSL https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/s
 bash <(wget -qO- https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/singularix.sh)
 ```
 
+默认会在安装流程中自动尝试开启 BBR（需要 root 权限）。
+如需关闭该行为，可执行：
+```bash
+SGX_AUTO_BBR=0 bash <(curl -fsSL https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main/singularix.sh)
+```
+
 SingulariX 是面向 Linux VPS 与容器环境的代理部署项目，核心能力由 Shell 脚本与 Node.js 容器入口共同提供。
 
 ## 核心特性

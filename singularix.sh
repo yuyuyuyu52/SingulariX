@@ -200,6 +200,11 @@ run_install_profile() {
       ;;
   esac
 
+  if [ "${SGX_AUTO_BBR:-1}" = "1" ]; then
+    echo "安装流程: 自动尝试开启 BBR..."
+    enable_bbr || true
+  fi
+
   run_core
 }
 
