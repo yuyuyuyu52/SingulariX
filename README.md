@@ -40,7 +40,6 @@ SingulariX 是面向 Linux VPS 与容器环境的代理部署项目，核心能�
 - `singularix.sh` 是仓库根入口脚本。
 - 真实核心逻辑位于 `platforms/container/nodejs/start.sh`。
 - 默认直接运行 `./singularix.sh` 会进入交互菜单（选择安装方案）。
-- 传入环境变量或参数时，会走无交互模式并直接委托核心脚本。
 
 ### 交互菜单功能
 - `[1]` 极致伪装 (Reality)：自动设为 443 端口。
@@ -76,12 +75,7 @@ sgx
 
 注意：`0`、`1`、`2` 这些数字是菜单内选项，不是 Shell 命令。请先进入脚本菜单再输入。
 
-### 2. 无交互执行示例
-```bash
-vlpt=443 hypt=8443 ./singularix.sh
-```
-
-### 3. 管理命令模式
+### 2. 管理命令模式
 ```bash
 ./singularix.sh list   # 查看节点与状态
 ./singularix.sh res    # 重启服务
@@ -90,7 +84,7 @@ vlpt=443 hypt=8443 ./singularix.sh
 ./singularix.sh del    # 彻底卸载
 ```
 
-### 3.1 订阅输出格式
+### 2.1 订阅输出格式
 执行 `./singularix.sh list` 时会同时输出：
 - Base64 订阅链接：适合大多数通用导入场景。
 - ShadowBox/Sing-box 订阅链接：自动生成或回退为在线转换链接。
@@ -99,13 +93,13 @@ vlpt=443 hypt=8443 ./singularix.sh
 
 可通过环境变量 `SUBCONVERTER_URL` 自定义转换服务地址（默认 `https://api.v1.mk/sub`）。
 
-### 4. 直接执行核心脚本
+### 3. 直接执行核心脚本
 ```bash
 chmod +x platforms/container/nodejs/start.sh
 ./platforms/container/nodejs/start.sh
 ```
 
-### 5. Node.js 容器入口
+### 4. Node.js 容器入口
 ```bash
 cd platforms/container/nodejs
 npm install
