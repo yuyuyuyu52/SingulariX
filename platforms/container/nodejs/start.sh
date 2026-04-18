@@ -656,7 +656,7 @@ fi
 
 xrsbout(){
 if [ -e "$HOME/sgx/xr.json" ]; then
-sed -i '${s/,[ 	]*$//}' "$HOME/sgx/xr.json"
+sed -i '${s/,\s*$//}' "$HOME/sgx/xr.json"
 cat >> "$HOME/sgx/xr.json" <<EOF
   ],
   "outbounds": [
@@ -683,7 +683,7 @@ EOF
 nohup "$HOME/sgx/xray" run -c "$HOME/sgx/xr.json" >> "$HOME/sgx/xr.log" 2>&1 &
 fi
 if [ -e "$HOME/sgx/sb.json" ]; then
-sed -i '${s/,[ 	]*$//}' "$HOME/sgx/sb.json"
+sed -i '${s/,\s*$//}' "$HOME/sgx/sb.json"
 cat >> "$HOME/sgx/sb.json" <<EOF
   ],
   "outbounds": [
@@ -707,13 +707,10 @@ cat >> "$HOME/sgx/sb.json" <<EOF
   "dns": {
     "servers": [
       {
-        "type": "udp",
-        "tag": "dns-main",
-        "server": "${sbdns}",
-        "server_port": 53
+        "type": "https",
+        "server": "${xsdns}"
       }
     ],
-    "final": "dns-main",
     "strategy": "${sbdnsyx}"
   }
 }
@@ -940,13 +937,11 @@ echo -e "nameserver 2a00:1098:2b::1\nnameserver 2a00:1098:2c::1" > /etc/resolv.c
 fi
 if [ -n "$( (command -v curl >/dev/null 2>&1 && curl -s6m5 -k "$v46url" 2>/dev/null) || (command -v wget >/dev/null 2>&1 && timeout 3 wget -6 -qO- --tries=2 "$v46url" 2>/dev/null) )" ]; then
 xsdns="[2001:4860:4860::8888]"
-sbdns="2001:4860:4860::8888"
 sbdnsyx="ipv6_only"
 xryx="ForceIPv6v4"
 sbyx="prefer_ipv6"
 else
 xsdns="8.8.8.8"
-sbdns="8.8.8.8"
 sbdnsyx="ipv4_only"
 xryx="ForceIPv4v6"
 sbyx="prefer_ipv4"
