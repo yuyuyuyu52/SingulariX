@@ -281,31 +281,6 @@ PY
     echo "$input" | sed 's/%/%25/g; s/:/%3A/g; s/\//%2F/g; s/?/%3F/g; s/&/%26/g; s/=/%3D/g; s/\[/%5B/g; s/\]/%5D/g'
   }
 
-  fetch_quiet() {
-    url="$1"
-    out="$2"
-    if command -v curl >/dev/null 2>&1; then
-      curl -LfsS -m 10 --retry 1 -o "$out" "$url" >/dev/null 2>&1
-      return $?
-    fi
-    if command -v wget >/dev/null 2>&1; then
-      timeout 10 wget -qO "$out" "$url"
-      return $?
-    fi
-    return 127
-  }
-
-  is_valid_converted_file() {
-    f="$1"
-    [ -s "$f" ] || return 1
-    bytes=$(wc -c < "$f" 2>/dev/null || echo 0)
-    [ "$bytes" -ge 64 ] || return 1
-    if grep -Eqi 'error|bad gateway|forbidden|not found|<!doctype html|<html' "$f"; then
-      return 1
-    fi
-    return 0
-  }
-
   if command -v python3 >/dev/null 2>&1; then
     if ! pgrep -f "python3 -m http.server $sub_port --directory $sub_root" >/dev/null 2>&1; then
       nohup python3 -m http.server "$sub_port" --directory "$sub_root" >/dev/null 2>&1 &
@@ -329,29 +304,11 @@ PY
       base64_url="http://$server_ip:$sub_port/$sub_path/base64"
       base64_url_enc=$(url_encode "$base64_url")
 
-      singbox_convert_url="$converter_url?target=singbox&new_name=true&url=$base64_url_enc&insert=false&emoji=true"
-      clash_convert_url="$converter_url?target=clash&new_name=true&url=$base64_url_enc&insert=false&emoji=true"
-
-      singbox_local="$sub_root/$sub_path/singbox"
-      clash_local="$sub_root/$sub_path/clash"
-      rm -f "$singbox_local" "$clash_local" >/dev/null 2>&1 || true
-
-      if fetch_quiet "$singbox_convert_url" "$singbox_local" && is_valid_converted_file "$singbox_local"; then
-        singbox_url="http://$server_ip:$sub_port/$sub_path/singbox"
-      else
-        rm -f "$singbox_local" >/dev/null 2>&1 || true
-        singbox_url="$singbox_convert_url"
-      fi
-
-      if fetch_quiet "$clash_convert_url" "$clash_local" && is_valid_converted_file "$clash_local"; then
-        clash_url="http://$server_ip:$sub_port/$sub_path/clash"
-      else
-        rm -f "$clash_local" >/dev/null 2>&1 || true
-        clash_url="$clash_convert_url"
-      fi
+      singbox_url="$converter_url?target=singbox&new_name=true&url=$base64_url_enc&insert=false&emoji=true"
+      clash_url="$converter_url?target=clash&new_name=true&url=$base64_url_enc&insert=false&emoji=true"
 
       echo "Subscribe (Base64): $base64_url"
-      echo "Subscribe (ShadowBox/Sing-box): $singbox_url"
+      echo "Subscribe (Sing-box): $singbox_url"
       echo "Subscribe (Clash): $clash_url"
       echo "Raw URI: $raw_url"
     else
