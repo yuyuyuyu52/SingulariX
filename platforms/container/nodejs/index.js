@@ -8,7 +8,7 @@ const { randomUUID } = require('crypto');
 const { Server, createWebSocketStream } = require('ws');
 
 const START_SCRIPT = path.join(__dirname, 'start.sh');
-const subtxt = path.join(process.env.HOME || os.homedir(), 'agsbx', 'jh.txt');
+const subtxt = path.join(process.env.HOME || os.homedir(), 'sgx', 'jh.txt');
 const NAME = process.env.NAME || os.hostname();
 const PORT = process.env.PORT || 3000;
 const uuid = process.env.uuid || randomUUID();

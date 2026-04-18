@@ -47,7 +47,18 @@ chmod +x "$CORE_SCRIPT" 2>/dev/null || true
 
 install_sgx_shortcut() {
   launcher="$SCRIPT_DIR/singularix.sh"
-  [ -f "$launcher" ] || return 0
+
+  # When running from pipe (bash <(curl ...)), $SCRIPT_DIR points to /dev/fd
+  # and the launcher file won't exist. Download and persist it.
+  if [ ! -f "$launcher" ]; then
+    mkdir -p "$HOME/sgx" 2>/dev/null || return 0
+    launcher="$HOME/sgx/singularix.sh"
+    if [ ! -f "$launcher" ]; then
+      raw_base_url="${SGX_RAW_BASE_URL:-https://raw.githubusercontent.com/yuyuyuyu52/SingulariX/main}"
+      download_bootstrap_file "$raw_base_url/singularix.sh" "$launcher" || return 0
+      chmod +x "$launcher" 2>/dev/null || true
+    fi
+  fi
 
   if [ "$(id -u)" -eq 0 ]; then
     target="/usr/local/bin/sgx"
@@ -92,15 +103,15 @@ has_env_overrides() {
 }
 
 stop_managed_processes() {
-  if [ -d "$HOME/agsbx" ]; then
-    pkill -f "$HOME/agsbx/xray" >/dev/null 2>&1 || true
-    pkill -f "$HOME/agsbx/sing-box" >/dev/null 2>&1 || true
-    pkill -f "$HOME/agsbx/cloudflared" >/dev/null 2>&1 || true
+  if [ -d "$HOME/sgx" ]; then
+    pkill -f "$HOME/sgx/xray" >/dev/null 2>&1 || true
+    pkill -f "$HOME/sgx/sing-box" >/dev/null 2>&1 || true
+    pkill -f "$HOME/sgx/cloudflared" >/dev/null 2>&1 || true
   fi
 }
 
 is_installed() {
-  [ -d "$HOME/agsbx" ] && ([ -f "$HOME/agsbx/xray" ] || [ -f "$HOME/agsbx/sing-box" ])
+  [ -d "$HOME/sgx" ] && ([ -f "$HOME/sgx/xray" ] || [ -f "$HOME/sgx/sing-box" ])
 }
 
 safe_clear() {
@@ -209,30 +220,30 @@ run_install_profile() {
 }
 
 load_existing_env() {
-  [ -f "$HOME/agsbx/vlpt" ] && export vlpt="$(cat "$HOME/agsbx/vlpt")"
-  [ -f "$HOME/agsbx/vmpt" ] && export vmpt="$(cat "$HOME/agsbx/vmpt")"
-  [ -f "$HOME/agsbx/vwpt" ] && export vwpt="$(cat "$HOME/agsbx/vwpt")"
-  [ -f "$HOME/agsbx/hypt" ] && export hypt="$(cat "$HOME/agsbx/hypt")"
-  [ -f "$HOME/agsbx/tupt" ] && export tupt="$(cat "$HOME/agsbx/tupt")"
-  [ -f "$HOME/agsbx/xhpt" ] && export xhpt="$(cat "$HOME/agsbx/xhpt")"
-  [ -f "$HOME/agsbx/vxpt" ] && export vxpt="$(cat "$HOME/agsbx/vxpt")"
-  [ -f "$HOME/agsbx/anpt" ] && export anpt="$(cat "$HOME/agsbx/anpt")"
-  [ -f "$HOME/agsbx/arpt" ] && export arpt="$(cat "$HOME/agsbx/arpt")"
-  [ -f "$HOME/agsbx/sspt" ] && export sspt="$(cat "$HOME/agsbx/sspt")"
-  [ -f "$HOME/agsbx/sopt" ] && export sopt="$(cat "$HOME/agsbx/sopt")"
-  [ -f "$HOME/agsbx/reym" ] && export reym="$(cat "$HOME/agsbx/reym")"
-  [ -f "$HOME/agsbx/cdnym" ] && export cdnym="$(cat "$HOME/agsbx/cdnym")"
-  [ -f "$HOME/agsbx/name" ] && export name="$(cat "$HOME/agsbx/name")"
-  [ -f "$HOME/agsbx/uuid" ] && export uuid="$(cat "$HOME/agsbx/uuid")"
+  [ -f "$HOME/sgx/vlpt" ] && export vlpt="$(cat "$HOME/sgx/vlpt")"
+  [ -f "$HOME/sgx/vmpt" ] && export vmpt="$(cat "$HOME/sgx/vmpt")"
+  [ -f "$HOME/sgx/vwpt" ] && export vwpt="$(cat "$HOME/sgx/vwpt")"
+  [ -f "$HOME/sgx/hypt" ] && export hypt="$(cat "$HOME/sgx/hypt")"
+  [ -f "$HOME/sgx/tupt" ] && export tupt="$(cat "$HOME/sgx/tupt")"
+  [ -f "$HOME/sgx/xhpt" ] && export xhpt="$(cat "$HOME/sgx/xhpt")"
+  [ -f "$HOME/sgx/vxpt" ] && export vxpt="$(cat "$HOME/sgx/vxpt")"
+  [ -f "$HOME/sgx/anpt" ] && export anpt="$(cat "$HOME/sgx/anpt")"
+  [ -f "$HOME/sgx/arpt" ] && export arpt="$(cat "$HOME/sgx/arpt")"
+  [ -f "$HOME/sgx/sspt" ] && export sspt="$(cat "$HOME/sgx/sspt")"
+  [ -f "$HOME/sgx/sopt" ] && export sopt="$(cat "$HOME/sgx/sopt")"
+  [ -f "$HOME/sgx/reym" ] && export reym="$(cat "$HOME/sgx/reym")"
+  [ -f "$HOME/sgx/cdnym" ] && export cdnym="$(cat "$HOME/sgx/cdnym")"
+  [ -f "$HOME/sgx/name" ] && export name="$(cat "$HOME/sgx/name")"
+  [ -f "$HOME/sgx/uuid" ] && export uuid="$(cat "$HOME/sgx/uuid")"
 
-  if [ -f "$HOME/agsbx/sbargotoken.log" ]; then
-    export agk="$(cat "$HOME/agsbx/sbargotoken.log")"
+  if [ -f "$HOME/sgx/sbargotoken.log" ]; then
+    export agk="$(cat "$HOME/sgx/sbargotoken.log")"
   fi
-  if [ -f "$HOME/agsbx/sbargoym.log" ]; then
-    export agn="$(cat "$HOME/agsbx/sbargoym.log")"
+  if [ -f "$HOME/sgx/sbargoym.log" ]; then
+    export agn="$(cat "$HOME/sgx/sbargoym.log")"
   fi
-  if [ -f "$HOME/agsbx/vlvm" ]; then
-    case "$(cat "$HOME/agsbx/vlvm")" in
+  if [ -f "$HOME/sgx/vlvm" ]; then
+    case "$(cat "$HOME/sgx/vlvm")" in
       Vmess) export argo=vmpt ;;
       Vless) export argo=vwpt ;;
     esac
@@ -240,8 +251,8 @@ load_existing_env() {
 }
 
 build_subscription() {
-  sub_root="$HOME/agsbx/sub"
-  src_file="$HOME/agsbx/jh.txt"
+  sub_root="$HOME/sgx/sub"
+  src_file="$HOME/sgx/jh.txt"
   base64_file="$sub_root/index"
   sub_port=12345
   converter_url="${SUBCONVERTER_URL:-https://api.v1.mk/sub}"
@@ -258,8 +269,8 @@ build_subscription() {
     base64 "$src_file" | tr -d '\n' > "$base64_file"
   fi
 
-  if [ -f "$HOME/agsbx/uuid" ]; then
-    sub_path=$(head -c 8 "$HOME/agsbx/uuid")
+  if [ -f "$HOME/sgx/uuid" ]; then
+    sub_path=$(head -c 8 "$HOME/sgx/uuid")
   else
     sub_path="default"
   fi
@@ -316,8 +327,8 @@ PY
       nohup python3 -m http.server "$sub_port" --directory "$sub_root" >/dev/null 2>&1 &
     fi
 
-    if [ -f "$HOME/agsbx/server_ip.log" ]; then
-      server_ip=$(cat "$HOME/agsbx/server_ip.log")
+    if [ -f "$HOME/sgx/server_ip.log" ]; then
+      server_ip=$(cat "$HOME/sgx/server_ip.log")
     elif command -v curl >/dev/null 2>&1; then
       server_ip=$(curl -s4m5 icanhazip.com || curl -s6m5 icanhazip.com || true)
     else
@@ -376,17 +387,17 @@ show_list() {
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
   echo "SingulariX - 节点与状态"
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  if [ -f "$HOME/agsbx/jh.txt" ]; then
-    cat "$HOME/agsbx/jh.txt"
+  if [ -f "$HOME/sgx/jh.txt" ]; then
+    cat "$HOME/sgx/jh.txt"
   else
     echo "尚未生成节点列表（jh.txt 不存在）。"
   fi
-  if [ -f "$HOME/agsbx/argoport.log" ]; then
+  if [ -f "$HOME/sgx/argoport.log" ]; then
     echo
-    echo "Argo 端口: $(cat "$HOME/agsbx/argoport.log")"
+    echo "Argo 端口: $(cat "$HOME/sgx/argoport.log")"
   fi
-  if [ -f "$HOME/agsbx/sbargoym.log" ]; then
-    echo "Argo 域名: $(cat "$HOME/agsbx/sbargoym.log")"
+  if [ -f "$HOME/sgx/sbargoym.log" ]; then
+    echo "Argo 域名: $(cat "$HOME/sgx/sbargoym.log")"
   fi
   echo
   build_subscription
@@ -426,14 +437,14 @@ upgrade_xray() {
   fi
 
   url="https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-$xarch.zip"
-  out="$HOME/agsbx/xray.zip"
+  out="$HOME/sgx/xray.zip"
   echo "正在升级 Xray..."
   if ! download_file "$url" "$out"; then
     echo "下载 Xray 失败：请检查网络或 curl/wget 是否可用。"
     return
   fi
-  unzip -o "$out" xray -d "$HOME/agsbx" >/dev/null 2>&1
-  chmod +x "$HOME/agsbx/xray"
+  unzip -o "$out" xray -d "$HOME/sgx" >/dev/null 2>&1
+  chmod +x "$HOME/sgx/xray"
   rm -f "$out"
   echo "Xray 升级完成。"
 }
@@ -449,14 +460,14 @@ upgrade_singbox() {
   [ -z "$sver" ] && sver="1.11.1"
 
   url="https://github.com/SagerNet/sing-box/releases/download/v$sver/sing-box-$sver-linux-$arch.tar.gz"
-  out="$HOME/agsbx/sing-box.tar.gz"
+  out="$HOME/sgx/sing-box.tar.gz"
   echo "正在升级 Sing-box..."
   if ! download_file "$url" "$out"; then
     echo "下载 Sing-box 失败：请检查网络或 curl/wget 是否可用。"
     return
   fi
-  tar -xzf "$out" -C "$HOME/agsbx" --strip-components=1 "sing-box-$sver-linux-$arch/sing-box"
-  chmod +x "$HOME/agsbx/sing-box"
+  tar -xzf "$out" -C "$HOME/sgx" --strip-components=1 "sing-box-$sver-linux-$arch/sing-box"
+  chmod +x "$HOME/sgx/sing-box"
   rm -f "$out"
   echo "Sing-box 升级完成。"
 }
@@ -490,12 +501,12 @@ uninstall_all() {
     sleep 1
     return
   fi
-  printf "确认彻底卸载（删除 $HOME/agsbx）？[y/N]: "
+  printf "确认彻底卸载（删除 $HOME/sgx）？[y/N]: "
   read -r answer
   case "$answer" in
     y|Y)
       stop_managed_processes
-      rm -rf "$HOME/agsbx"
+      rm -rf "$HOME/sgx"
       echo "已卸载完成。"
       ;;
     *)
@@ -650,7 +661,7 @@ print_menu() {
 }
 
 ensure_reinstall_if_running() {
-  if pgrep -f "$HOME/agsbx/xray|$HOME/agsbx/sing-box|$HOME/agsbx/cloudflared" >/dev/null 2>&1; then
+  if pgrep -f "$HOME/sgx/xray|$HOME/sgx/sing-box|$HOME/sgx/cloudflared" >/dev/null 2>&1; then
     printf "检测到已有实例运行，是否停止并按新配置重装？[y/N]: "
     read -r answer
     case "$answer" in
