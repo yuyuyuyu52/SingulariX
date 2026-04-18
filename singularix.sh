@@ -796,16 +796,15 @@ print_menu() {
 
 ensure_reinstall_if_running() {
   if pgrep -f "$HOME/sgx/xray|$HOME/sgx/sing-box" >/dev/null 2>&1; then
-    printf "Running instance detected. Stop and reinstall with new config? [y/N]: "
+    printf "Services running. Stop to add new protocol? (existing nodes kept) [y/N]: "
     read -r answer
     case "$answer" in
       y|Y)
         stop_managed_processes
         ;;
       *)
-        echo "Reinstall cancelled. Showing current status instead."
-        run_core
-        exit 0
+        echo "Cancelled. Returning to menu."
+        return 1
         ;;
     esac
   fi
@@ -818,43 +817,43 @@ while true; do
 
   case "$choice" in
     1)
-      ensure_reinstall_if_running
+      ensure_reinstall_if_running || continue
       if run_or_warn "Install Reality" run_install_profile reality; then
         exit 0
       fi
       ;;
     2)
-      ensure_reinstall_if_running
+      ensure_reinstall_if_running || continue
       if run_or_warn "Install Hy2" run_install_profile hy2; then
         exit 0
       fi
       ;;
     3)
-      ensure_reinstall_if_running
+      ensure_reinstall_if_running || continue
       if run_or_warn "Install TUIC" run_install_profile tuic; then
         exit 0
       fi
       ;;
     4)
-      ensure_reinstall_if_running
+      ensure_reinstall_if_running || continue
       if run_or_warn "Install Shadowsocks-2022" run_install_profile ss2022; then
         exit 0
       fi
       ;;
     5)
-      ensure_reinstall_if_running
+      ensure_reinstall_if_running || continue
       if run_or_warn "Install VLESS-WS" run_install_profile vlessws; then
         exit 0
       fi
       ;;
     6)
-      ensure_reinstall_if_running
+      ensure_reinstall_if_running || continue
       if run_or_warn "Install VMess-WS" run_install_profile vmessws; then
         exit 0
       fi
       ;;
     7)
-      ensure_reinstall_if_running
+      ensure_reinstall_if_running || continue
       if run_or_warn "Install SOCKS5" run_install_profile socks5; then
         exit 0
       fi
