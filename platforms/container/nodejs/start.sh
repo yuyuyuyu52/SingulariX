@@ -732,8 +732,11 @@ cat >> "$HOME/sgx/xr.json" <<EOF
       "settings": {
       "domainStrategy":"${xryx}"
      }
-    },
-    {
+    }
+EOF
+if [ "$x1outtag" = "warp-out" ] || [ "$x2outtag" = "warp-out" ]; then
+cat >> "$HOME/sgx/xr.json" <<EOF
+    ,{
       "tag": "x-warp-out",
       "protocol": "wireguard",
       "settings": {
@@ -765,6 +768,9 @@ cat >> "$HOME/sgx/xr.json" <<EOF
        "tag":"x-warp-out"
      }
 }
+EOF
+fi
+cat >> "$HOME/sgx/xr.json" <<EOF
   ],
   "routing": {
     "domainStrategy": "IPOnDemand",
@@ -796,6 +802,9 @@ cat >> "$HOME/sgx/sb.json" <<EOF
       "tag": "direct"
     }
   ],
+EOF
+if [ "$s1outtag" = "warp-out" ] || [ "$s2outtag" = "warp-out" ]; then
+cat >> "$HOME/sgx/sb.json" <<EOF
   "endpoints": [
     {
       "type": "wireguard",
@@ -819,6 +828,9 @@ cat >> "$HOME/sgx/sb.json" <<EOF
       ]
     }
   ],
+EOF
+fi
+cat >> "$HOME/sgx/sb.json" <<EOF
   "route": {
     "rules": [
        {
@@ -829,7 +841,7 @@ cat >> "$HOME/sgx/sb.json" <<EOF
          "strategy": "${sbyx}"
        },
       {
-        "ip_cidr": [ ${sip} ],         
+        "ip_cidr": [ ${sip} ],
         "outbound": "${s1outtag}"
       }
     ],
