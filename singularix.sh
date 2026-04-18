@@ -181,17 +181,20 @@ run_install_profile() {
     hy2)
       export hypt="$(rand_port)"
       ;;
-    gold)
-      export vlpt=443
-      export hypt="$(rand_port)"
-      ;;
-    full)
-      export vlpt=443
-      export hypt="$(rand_port)"
+    tuic)
       export tupt="$(rand_port)"
+      ;;
+    ss2022)
       export sspt="$(rand_port)"
+      ;;
+    vlessws)
       export vwpt="$(rand_port)"
+      ;;
+    vmessws)
       export vmpt="$(rand_port)"
+      ;;
+    socks5)
+      export sopt="$(rand_port)"
       ;;
     custom)
       ;;
@@ -615,24 +618,27 @@ print_menu() {
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
   echo "SingulariX 交互菜单"
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  echo " [1] 极致伪装 (Reality)：自动设为 443 端口，最稳"
-  echo " [2] 暴力提速 (Hy2)：自动随机 UDP 端口，看视频最快"
-  echo " [3] 黄金组合：Reality + Hy2"
-  echo " [4] 全家桶：一口气开启 6 种主流协议"
+  echo " [1] 安装 VLESS-Reality (TCP)"
+  echo " [2] 安装 Hysteria2"
+  echo " [3] 安装 TUIC"
+  echo " [4] 安装 Shadowsocks-2022"
+  echo " [5] 安装 VLESS-WS"
+  echo " [6] 安装 VMess-WS"
+  echo " [7] 安装 SOCKS5"
   echo "-----------------------------------------------------------"
-  echo " [9] 开启 BBR"
-  echo " [10] 检测 IP 纯净度"
+  echo " [12] 开启 BBR"
+  echo " [13] 检测 IP 纯净度"
   echo "-----------------------------------------------------------"
   if is_installed; then
-    echo " [5] 查看节点与状态"
-    echo " [6] 重启服务"
-    echo " [7] 更新内核 (Xray/Sing-box)"
-    echo " [8] 彻底卸载"
+    echo " [8] 查看节点与状态"
+    echo " [9] 重启服务"
+    echo " [10] 更新内核 (Xray/Sing-box)"
+    echo " [11] 彻底卸载"
   else
-    echo " [5] 查看节点与状态（未安装）"
-    echo " [6] 重启服务（未安装）"
-    echo " [7] 更新内核（未安装）"
-    echo " [8] 彻底卸载（未安装）"
+    echo " [8] 查看节点与状态（未安装）"
+    echo " [9] 重启服务（未安装）"
+    echo " [10] 更新内核（未安装）"
+    echo " [11] 彻底卸载（未安装）"
   fi
   echo " [0] 退出"
   echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
@@ -657,7 +663,7 @@ ensure_reinstall_if_running() {
 
 while true; do
   print_menu
-  printf "请选择 [0-10]: "
+  printf "请选择 [0-13]: "
   read -r choice
 
   case "$choice" in
@@ -675,17 +681,35 @@ while true; do
       ;;
     3)
       ensure_reinstall_if_running
-      if run_or_warn "安装黄金组合" run_install_profile gold; then
+      if run_or_warn "安装 TUIC" run_install_profile tuic; then
         exit 0
       fi
       ;;
     4)
       ensure_reinstall_if_running
-      if run_or_warn "安装全家桶" run_install_profile full; then
+      if run_or_warn "安装 Shadowsocks-2022" run_install_profile ss2022; then
         exit 0
       fi
       ;;
     5)
+      ensure_reinstall_if_running
+      if run_or_warn "安装 VLESS-WS" run_install_profile vlessws; then
+        exit 0
+      fi
+      ;;
+    6)
+      ensure_reinstall_if_running
+      if run_or_warn "安装 VMess-WS" run_install_profile vmessws; then
+        exit 0
+      fi
+      ;;
+    7)
+      ensure_reinstall_if_running
+      if run_or_warn "安装 SOCKS5" run_install_profile socks5; then
+        exit 0
+      fi
+      ;;
+    8)
       if is_installed; then
         run_or_warn "查看节点与状态" show_list || true
       else
@@ -693,21 +717,21 @@ while true; do
         sleep 1
       fi
       ;;
-    6)
+    9)
       if run_or_warn "重启服务" restart_services; then
         exit 0
       fi
       ;;
-    7)
+    10)
       run_or_warn "更新内核" upgrade_cores || true
       ;;
-    8)
+    11)
       run_or_warn "彻底卸载" uninstall_all || true
       ;;
-    9)
+    12)
       run_or_warn "开启 BBR" enable_bbr || true
       ;;
-    10)
+    13)
       run_or_warn "检测 IP 纯净度" check_ip_purity || true
       ;;
     0)
